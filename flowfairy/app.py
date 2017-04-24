@@ -8,6 +8,7 @@ from flowfairy.utils import take
 from flowfairy.data.loader import DataLoader
 from flowfairy.feature import FeatureManager
 from flowfairy.core.queue import FlowQueue
+from flowfairy.core.stage import stage
 
 
 def load_net():
@@ -33,6 +34,8 @@ def run(*args, **options):
         net.init(**dict(zip(fts.fields, X)))
 
         with tf.Session() as sess:
+
+            stage.before(sess, net)
             queue.start(sess)
 
             net.begin(sess)
@@ -42,6 +45,8 @@ def run(*args, **options):
                 while not coord.should_stop() and not net.should_stop():
 
                     net.train(sess)
+
+                    stage.run(sess, step)
 
                     if step % display_step == 0:
                         net.display(sess, step)

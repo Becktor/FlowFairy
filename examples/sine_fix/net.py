@@ -93,6 +93,8 @@ class Net:
         with tf.name_scope('l2'):
              self.l2 = tf.reduce_mean(tf.pow(pred*m - y*m, 2))
 
+        self.loss = self.l1
+
         self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.l1)
 
         # Evaluate model

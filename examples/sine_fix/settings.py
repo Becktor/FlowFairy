@@ -1,3 +1,6 @@
+import os
+
+base_dir = os.path.dirname(os.path.realpath(__file__))
 
 NET = 'net'
 
@@ -7,6 +10,10 @@ FEATURES = [
     'feature.NoisySineGen',
     'feature.Dropout',
     'feature.Mask'
+]
+
+STAGES = [
+    
 ]
 
 SAMPLERATE = 11024
@@ -19,3 +26,5 @@ BATCH_SIZE = 16
 CUDA_VISIBLE_DEVICES = 0
 
 LOG_INTERVAL = 100//BATCH_SIZE
+
+LOG_DIR = os.path.join(base_dir, "logs")
