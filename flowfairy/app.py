@@ -1,34 +1,14 @@
 import tensorflow as tf
 import numpy as np
 import itertools as it
-import threading
 import importlib
 
 from flowfairy.conf import settings
 from flowfairy.utils import take
 from flowfairy.data.loader import DataLoader
 from flowfairy.feature import FeatureManager
+from flowfairy.core.queue import FlowQueue
 
-def setup_queue(features, capacity=128):
-
-    with tf.name_scope("queue"):
-        print("shapes", features.shapes)
-        queue = tf.PaddingFIFOQueue(capacity, features.dtypes, shapes=features.shapes)
-        enqueue_op = queue.enqueue(features.placeholders)
-
-        return queue, enqueue_op
-
-def enqueue(coord, sess, enqueue_op, features):
-    while not coord.should_stop():
-        batch = next(features)
-        sess.run(enqueue_op, feed_dict=dict(zip(features.placeholders, batch)))
-
-def start_queue(coord, sess, enqueue_op, features, num_threads):
-    for _ in range(num_threads):
-        t = threading.Thread(target=enqueue, args=(coord, sess, enqueue_op, features))
-        coord.register_thread(t)
-        t.daemon = True
-        t.start()
 
 def load_net():
     net = importlib.import_module(settings.NET).Net()
@@ -45,7 +25,7 @@ def run(*args, **options):
         display_step = settings.LOG_INTERVAL
 
         coord = tf.train.Coordinator()
-        queue, enqueue_op = setup_queue(fts)
+        queue = FlowQueue(fts, coord)
 
         X = queue.dequeue_many(bs)
 
@@ -53,7 +33,7 @@ def run(*args, **options):
         net.init(**dict(zip(fts.fields, X)))
 
         with tf.Session() as sess:
-            start_queue(coord, sess, enqueue_op, fts, 1)
+            queue.start(sess)
 
             net.begin(sess)
 
