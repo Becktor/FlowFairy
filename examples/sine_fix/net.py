@@ -82,6 +82,7 @@ class Net:
 
         # Construct model
         pred, c1, c2, c3 = conv_net(x, weights, biases, keep_prob)
+        self.pred = pred
 
         # Define loss and optimizer
         with tf.name_scope('cost'):
@@ -105,14 +106,5 @@ class Net:
     def begin(self, session):
          session.run(self.init)
 
-    def train(self, sess):
-         self.its += 1
-         sess.run(self.optimizer)
-
     def should_stop(self):
         return False
-
-    def display(self, sess, step):
-         it = step * batch_size
-         l1, l2, loss = sess.run([self.l1, self.l2, self.cost])
-         print(f'Iter {it}, l1: {l1:.6f}, l2: {l2:.6f}, loss: {loss:.6f}')

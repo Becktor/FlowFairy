@@ -44,12 +44,7 @@ def run(*args, **options):
                 step = 0
                 while not coord.should_stop() and not net.should_stop():
 
-                    net.train(sess)
-
                     stage.run(sess, step)
-
-                    if step % display_step == 0:
-                        net.display(sess, step)
 
                     step += 1
             except KeyboardInterrupt:

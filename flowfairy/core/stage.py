@@ -42,7 +42,4 @@ def register(interval=1):
 try:
     import stages
 except ModuleNotFoundError:
-    print(e)
-    import sys
-    print(sys.path)
-    print("No stages")
+    pass
