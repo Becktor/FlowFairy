@@ -51,7 +51,7 @@ def run(*args, **options):
                 pass
 
             coord.request_stop()
-            queue.close(cancel_pending_enqueues=True)
+            queue.stop()
             coord.join(stop_grace_period_secs=5)
 
 

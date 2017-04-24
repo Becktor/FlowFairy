@@ -36,3 +36,6 @@ class FlowQueue:
 
     def dequeue_many(self, batch_size):
         return self.queue.dequeue_many(batch_size)
+
+    def stop(self):
+        self.queue.close(cancel_pending_enqueues=True)
