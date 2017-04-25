@@ -7,7 +7,7 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
-from flowfairy.core.stage import register, Stage
+from flowfairy.core.stage import register, Stage, stage
 from flowfairy.conf import settings
 
 
@@ -36,7 +36,7 @@ class SummaryStage(Stage):
         self.reset_fig()
         img = self.fig2rgb_array()
 
-        self.image = tf.Variable(np.zeros(img.shape, dtype=np.uint8))
+        self.image = tf.Variable(np.zeros(img.shape, dtype=np.uint8), trainable=False)
 
         tf.summary.image('graph', self.image)
 
@@ -69,7 +69,7 @@ class SummaryStage(Stage):
 
 
 
-@register
+@register()
 class TrainingStage(Stage):
 
     def before(self, sess, net):
