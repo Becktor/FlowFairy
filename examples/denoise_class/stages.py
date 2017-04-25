@@ -11,7 +11,7 @@ from flowfairy.core.stage import register, Stage
 from flowfairy.conf import settings
 
 
-@register(10000)
+@register(500)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
         self.figure.canvas.draw()
@@ -68,7 +68,7 @@ class SummaryStage(Stage):
 
 
 
-@register
+@register()
 class TrainingStage(Stage):
 
     def before(self, sess, net):
