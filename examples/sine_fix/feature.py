@@ -10,17 +10,16 @@ duration = settings.DURATION
 
 class FrequencyGen(Feature):
 
-    frqs = np.arange(340, 720, 40)
-
     def feature(self):
-        return {'frequency': np.random.choice(self.frqs)}
+        frqs = np.random.randint(340, 720)
+        return {'frequency': frqs}
 
 
 class SineGen(Feature):
+    arr = np.arange(samplerate, dtype=np.float32) * 2 * np.pi
 
     def feature(self, frequency, **kwargs):
-        arr = np.arange(samplerate * duration)
-        return {'y': (np.sin(2 * np.pi * arr).astype('float32'))}
+        return {'y': np.sin(self.arr * (frequency)/samplerate)}
 
     def fields(self):
         return ('y',)
@@ -29,8 +28,8 @@ class SineGen(Feature):
 class NoisySineGen(Feature):
 
     def feature(self, y, **kwargs):
-        noise = np.random.uniform(-0.5, 0.5, samplerate)
-        return {'x': ( noise+y ).astype('float32')}
+        noise = np.random.uniform(-0.5, 0.5, samplerate).astype('float32')
+        return {'x': noise+y}
 
     def fields(self):
         return ('x',)
@@ -39,7 +38,7 @@ class NoisySineGen(Feature):
 class Mask(Feature):
 
     def feature(self, **kwargs):
-        return {'m': np.ones(samplerate * duration).astype('float32')}
+        return {'m': np.ones(samplerate * duration, dtype=np.float32)}
 
     def fields(self):
         return ('m',)

@@ -40,6 +40,8 @@ def run(*args, **options):
 
             net.begin(sess)
 
+            sess.run(tf.global_variables_initializer())
+
             try:
                 step = 0
                 while not coord.should_stop() and not net.should_stop():

@@ -25,18 +25,20 @@ class SummaryStage(Stage):
         self.figure.clf()
 
     def before(self, sess, net):
-        tf.summary.scalar('loss', net.loss)
+        tf.summary.scalar('l1', net.l1)
+        tf.summary.scalar('l2', net.l2)
+        tf.summary.scalar('cost', net.cost)
 
         self.pred = net.pred
+        self.x = net.x
+        self.y = net.y
 
         self.reset_fig()
         img = self.fig2rgb_array()
 
-        with tf.variable_scope("graph"):
-            image = tf.get_variable("graph_image", shape=img.shape, dtype=tf.uint8)
-            sess.run(image.initializer)
+        self.image = tf.Variable(np.zeros(img.shape, dtype=np.uint8))
 
-        tf.summary.image('graph', image)
+        tf.summary.image('graph', self.image)
 
         self.merged = tf.summary.merge_all()
         self.writer = tf.summary.FileWriter(os.path.join(settings.LOG_DIR, str(datetime.now())), sess.graph)
@@ -44,21 +46,19 @@ class SummaryStage(Stage):
     def plot(self, sess):
         self.reset_fig()
 
-        res = sess.run(self.pred)
+        res, x, y = sess.run([ self.pred, self.x, self.y ])
 
-        start = 0
-        end = 200
+        start = 1000
+        end = start + 200
 
         plt.subplot('111').plot(res[0,start:end],'r')
-        #plt.subplot('111').plot(batch_y[-1,start:end],'b', alpha=0.5)
-        #plt.subplot('111').plot(batch_x[-1,start:end],'g', alpha=0.5)
+        plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)
+        plt.subplot('111').plot(x[0,start:end],'g', alpha=0.5)
 
 
     def draw_img(self, sess):
         self.plot(sess)
-        with tf.variable_scope("graph", reuse=True):
-            image = tf.get_variable("graph_image", dtype=tf.uint8)
-            sess.run(image.assign(self.fig2rgb_array()))
+        sess.run(self.image.assign(self.fig2rgb_array()))
 
     def run(self, sess, i):
         self.draw_img(sess)
