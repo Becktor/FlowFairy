@@ -10,7 +10,8 @@ FEATURES = [
     'feature.NoisySineGen',
     'feature.LabelGen',
     'feature.Dropout',
-    'feature.Mask'
+    'feature.Mask',
+    'feature.Chunk'
 ]
 
 STAGES = [
@@ -23,6 +24,7 @@ DROPOUT = 0.50
 LEARNING_RATE = 0.005
 DISCRETE_CLASS = 256
 BATCH_SIZE = 32
+CHUNK = 50
 
 CUDA_VISIBLE_DEVICES = 0
 

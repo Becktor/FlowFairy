@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 from flowfairy.core.stage import register, Stage
 from flowfairy.conf import settings
 
+def norm(val):
+    val = (val-tf.minimum(val))/(tf.maximum(val)-tf.minimum(val))
+    return val
 
 @register(500)
 class SummaryStage(Stage):
@@ -20,6 +23,7 @@ class SummaryStage(Stage):
         shape = (nrows, ncols, 3) if not expand else (1, nrows, ncols, 3)
         return np.fromstring(buf, dtype=np.uint8).reshape(shape)
 
+
     def reset_fig(self):
         self.figure = plt.figure(num=0, figsize=(6,4), dpi=300)
         self.figure.clf()
@@ -27,14 +31,14 @@ class SummaryStage(Stage):
     def before(self, sess, net):
         tf.summary.scalar('acc', net.accuracy)
         tf.summary.scalar('cost', net.cost)
-
         self.pred = net.pred
         self.x = net.x
         self.y = net.y
-
+        tf.summary.audio('x', self.x, settings.SAMPLERATE)
+        tf.summary.audio('pred', self.pred, settings.SAMPLERATE)
+        self.chunk=net.chunk
         self.reset_fig()
         img = self.fig2rgb_array()
-
         self.image = tf.Variable(np.zeros(img.shape, dtype=np.uint8))
 
         tf.summary.image('graph', self.image)
@@ -45,11 +49,10 @@ class SummaryStage(Stage):
     def plot(self, sess):
         self.reset_fig()
 
-        res, x, y = sess.run([self.pred, self.x, self.y ])
+        res, x, y, c = sess.run([self.pred, self.x, self.y ,self.chunk])
         res = np.argmax(res, 2)
-        start = 1000
-        end = start + 200
-
+        start = c[0]-50
+        end = (start+settings.CHUNK+100)
         plt.subplot('111').plot(res[0,start:end],'r')
         plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)
         plt.subplot('111').plot(x[0,start:end],'g', alpha=0.5)

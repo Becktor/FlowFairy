@@ -6,6 +6,7 @@ import numpy as np
 
 samplerate = settings.SAMPLERATE
 duration = settings.DURATION
+chunk = settings.CHUNK
 
 
 class FrequencyGen(Feature):
@@ -13,6 +14,7 @@ class FrequencyGen(Feature):
     def feature(self):
         frqs = np.random.randint(340, 720)
         return {'frequency': frqs}
+
 
 def classify(val):
     val = (val-np.min(val))/(np.max(val)-np.min(val))
@@ -31,7 +33,7 @@ class NoisySineGen(Feature):
 
     def feature(self, y, **kwargs):
         noise = np.random.uniform(-0.5, 0.5, samplerate).astype('float32')
-        return {'x': noise+y}
+        return {'x': noise + y}
 
     def fields(self):
         return ('x',)
@@ -49,7 +51,16 @@ class Mask(Feature):
     def fields(self):
         return ('m',)
 
+class Chunk(Feature):
 
+    def feature(self, x, **kwargs):
+        k = np.ones(samplerate * duration, dtype=np.float32)
+        j = np.random.randint(chunk, samplerate*duration)
+        k[j:j+chunk] = 0
+        return {'x':x*k, 'chunk':np.array(j)}
+
+    def fields(self):
+        return ('chunk',)
 
 class Dropout(Feature):
 

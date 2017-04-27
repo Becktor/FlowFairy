@@ -38,7 +38,7 @@ def run(*args, **options):
             stage.before(sess, net)
             queue.start(sess)
 
-            net.begin(sess)
+            #net.begin(sess)
 
             sess.run(tf.global_variables_initializer())
 
@@ -55,5 +55,3 @@ def run(*args, **options):
             coord.request_stop()
             queue.stop()
             coord.join(stop_grace_period_secs=5)
-
-
