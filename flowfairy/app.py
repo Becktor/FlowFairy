@@ -43,7 +43,7 @@ def run(*args, **options):
             sess.run(tf.global_variables_initializer())
 
             try:
-                step = 0
+                step = 1
                 while not coord.should_stop() and not net.should_stop():
 
                     stage.run(sess, step)

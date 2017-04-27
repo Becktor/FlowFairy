@@ -50,7 +50,7 @@ class Net:
             'wc2': tf.Variable(tf.truncated_normal([64, 1, 4, 8])),
             'wc3': tf.Variable(tf.truncated_normal([64, 1, 8, 4])),
             'wc4': tf.Variable(tf.truncated_normal([64, 1, 1, 8])),
-            'wc5': tf.Variable(tf.truncated_normal([64, 1, 8, 256])),
+            'wc5': tf.Variable(tf.truncated_normal([1, 1, 8, 256])),
             'out': tf.Variable(tf.truncated_normal([sr, 256]))
         }
 
