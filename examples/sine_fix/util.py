@@ -1,5 +1,13 @@
 import tensorflow as tf
 
+def embedding(l, cls, embedding_size, num_classes):
+
+     W = tf.Variable(tf.truncated_normal([num_classes, embedding_size]))
+     emb = tf.nn.embedding_lookup(W, cls)
+
+     return emb
+
+
 
 # Create some wrappers for simplicity
 def lrelu(x, leak=0.2, name="lrelu"):

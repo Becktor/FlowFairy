@@ -11,7 +11,7 @@ from flowfairy.core.stage import register, Stage, stage
 from flowfairy.conf import settings
 
 
-@register(10000)
+@register(100)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
         self.figure.canvas.draw()
@@ -25,13 +25,13 @@ class SummaryStage(Stage):
         self.figure.clf()
 
     def before(self, sess, net):
-        tf.summary.scalar('l1', net.l1)
-        tf.summary.scalar('l2', net.l2)
+        tf.summary.scalar('acc', net.accuracy)
         tf.summary.scalar('cost', net.cost)
 
         self.pred = net.pred
         self.x = net.x
         self.y = net.y
+        self.emb = net.embedding
 
         self.reset_fig()
         img = self.fig2rgb_array()
@@ -46,14 +46,16 @@ class SummaryStage(Stage):
     def plot(self, sess):
         self.reset_fig()
 
-        res, x, y = sess.run([ self.pred, self.x, self.y ])
+        res, x, y, emb = sess.run([ self.pred, self.x, self.y, self.emb ])
+        res = np.argmax(res, 2)
 
         start = 1000
-        end = start + 200
+        end = start + settings.EMBEDDING_SIZE
 
         plt.subplot('111').plot(res[0,start:end],'r')
         plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)
         plt.subplot('111').plot(x[0,start:end],'g', alpha=0.5)
+        plt.subplot('111').plot(emb[0])
 
 
     def draw_img(self, sess):

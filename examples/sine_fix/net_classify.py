@@ -2,12 +2,20 @@ import tensorflow as tf
 from flowfairy.conf import settings
 from util import lrelu, conv2d, maxpool2d, embedding
 
+discrete_class = settings.DISCRETE_CLASS
 batch_size = settings.BATCH_SIZE
 samplerate = sr = settings.SAMPLERATE
 dropout = settings.DROPOUT
 learning_rate = settings.LEARNING_RATE
 embedding_size = settings.EMBEDDING_SIZE
 num_classes = settings.CLASS_COUNT
+
+def expand(l, emb, embedding_size):
+    shape = l.get_shape().as_list()[:-1]
+    zeros = tf.zeros(shape + [embedding_size])
+
+    emb = emb[:, None, :, :] + zeros
+    return emb
 
 
 # Create model
@@ -19,9 +27,11 @@ def conv_net(x, cls, weights, biases, dropout):
     print('conv1: ', pool1)
 
     emb1 = embedding(pool1, cls, embedding_size, num_classes)
+    expanded = expand(pool1, emb1, embedding_size)
+    expanded = tf.concat([pool1, expanded], axis=3)
 
     #convblock 2
-    conv2 = conv2d(emb1, weights['wc2'], biases['bc2'])
+    conv2 = conv2d(expanded, weights['wc2'], biases['bc2'])
     pool2 = maxpool2d(conv2, k=2)
     print('conv2: ', pool2)
 
@@ -31,15 +41,22 @@ def conv_net(x, cls, weights, biases, dropout):
 
     #convblock 4
     conv4 = tf.depth_to_space(conv3, 2) #upconv
-    #conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 1]) # reshape upconvolution to have proper shape
-    out = tf.reshape(conv4, [-1, weights['out'].get_shape().as_list()[0]])
-    #print(out)
-    #out = tf.add(tf.matmul(out, weights['out']), biases['out'])
-    return out #, conv1, conv2, conv3
+    conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 1]) # reshape upconvolution to have proper shape
+    conv4 = conv2d(conv4, weights['wc4'], biases['bc4'])
+    print('conv4: ', conv4)
+
+    #convblock 5
+    conv5 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
+    conv5 = conv2d(conv4, weights['wc5'], biases['bc5'])
+    print('conv5: ', conv5)
+
+    #out
+    out = tf.reshape(conv5, [-1, weights['out'].get_shape().as_list()[0], 256])
+    return out, emb1
 
 class Net:
 
-    def init(self, x, y, keep_prob, frqid, m):
+    def init(self, x, y, keep_prob, frqid):
         # Store layers weight & bias
 
         weights = {
@@ -61,28 +78,27 @@ class Net:
         }
 
         self.x = x
-        self.y = y
+        self.y = tf.cast(y, tf.int64)
 
         # Construct model
-        pred = conv_net(x, frqid, weights, biases, keep_prob)
+        pred, self.embedding = conv_net(x, frqid, weights, biases, keep_prob)
         self.pred = pred
+
+        target_output = tf.reshape(self.y,[-1])
+        prediction = tf.reshape(pred,[-1, discrete_class])
 
         # Define loss and optimizer
         with tf.name_scope('cost'):
-             self.cost = tf.sqrt(tf.reduce_mean(tf.square(y*m - pred*m)))
+            self.sparse = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = prediction,
+                                                                    labels = target_output)
+            self.cost = tf.reduce_mean(self.sparse)
 
-        with tf.name_scope('l1'):
-             self.l1 = tf.reduce_mean(tf.abs(pred*m - y*m))
-
-        with tf.name_scope('l2'):
-             self.l2 = tf.reduce_mean(tf.pow(pred*m - y*m, 2))
-
-        self.loss = self.l1
-
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.l1)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.cost)
 
         # Evaluate model
-        #accuracy = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(y, pred))))
+        correct_pred = tf.equal(tf.argmax(pred, 2), self.y)
+        with tf.name_scope('accuracy'):
+            self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
     def begin(self, session):
         #session.run(self.init)
