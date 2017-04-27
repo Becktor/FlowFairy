@@ -31,7 +31,7 @@ class SummaryStage(Stage):
         self.pred = net.pred
         self.x = net.x
         self.y = net.y
-
+        self.chunk=net.chunk
         self.reset_fig()
         img = self.fig2rgb_array()
 
@@ -45,10 +45,10 @@ class SummaryStage(Stage):
     def plot(self, sess):
         self.reset_fig()
 
-        res, x, y = sess.run([self.pred, self.x, self.y ])
+        res, x, y, c = sess.run([self.pred, self.x, self.y ,self.chunk])
         res = np.argmax(res, 2)
-        start = 1000
-        end = start + 200
+        start = c[0] - 100
+        end = start + settings.CHUNK + 100
 
         plt.subplot('111').plot(res[0,start:end],'r')
         plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)

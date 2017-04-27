@@ -34,7 +34,6 @@ def conv_net(x, weights, biases, dropout):
     conv5 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
     conv5 = conv2d(conv4, weights['wc5'], biases['bc5'])
     print('conv5: ', conv5)
-
     #out
     out = tf.reshape(conv5, [-1, weights['out'].get_shape().as_list()[0], 256])
     print('out: ', out)
@@ -42,7 +41,7 @@ def conv_net(x, weights, biases, dropout):
 
 class Net:
 
-    def init(self, x, y, m, keep_prob):
+    def init(self, x, y, m, chunk, keep_prob):
         # Store layers weight & bias
 
         weights = {
@@ -65,6 +64,7 @@ class Net:
 
         self.x = x
         self.y = tf.cast(y, tf.int64)
+        self.chunk = chunk
 
         # Construct model
         pred = conv_net(self.x, weights, biases, keep_prob)
