@@ -34,8 +34,7 @@ class SummaryStage(Stage):
         self.pred = net.pred
         self.x = net.x
         self.y = net.y
-        tf.summary.audio('pred', self.x, settings.SAMPLERATE)
-        tf.summary.audio('pred', tf.cast(self.y, tf.float32), settings.SAMPLERATE)
+        tf.summary.audio('x', self.x, settings.SAMPLERATE)
         tf.summary.audio('pred', self.pred, settings.SAMPLERATE)
         self.chunk=net.chunk
         self.reset_fig()
@@ -52,9 +51,8 @@ class SummaryStage(Stage):
 
         res, x, y, c = sess.run([self.pred, self.x, self.y ,self.chunk])
         res = np.argmax(res, 2)
-        start = c[0] - 50
-        end = start + settings.CHUNK + 50
-
+        start = c[0]-50
+        end = (start+settings.CHUNK+100)
         plt.subplot('111').plot(res[0,start:end],'r')
         plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)
         plt.subplot('111').plot(x[0,start:end],'g', alpha=0.5)
