@@ -15,6 +15,7 @@ class FrequencyGen(Feature):
         frqs = np.random.randint(340, 720)
         return {'frequency': frqs}
 
+
 def classify(val):
     val = (val-np.min(val))/(np.max(val)-np.min(val))
     return np.floor(val*255)
