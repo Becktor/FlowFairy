@@ -2,31 +2,31 @@ import os
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
-NET = 'net_classify'
+NET = 'net'
 
 FEATURES = [
+    'feature.FrequencyGen',
     'feature.SineGen',
     'feature.NoisySineGen',
+    'feature.LabelGen',
     'feature.Dropout',
-    'feature.ConvertToClasses'
-    #'feature.Mask'
+    'feature.Mask',
+    'feature.Chunk'
+]
+
+STAGES = [
+
 ]
 
 SAMPLERATE = 11024
 DURATION = 1
 DROPOUT = 0.50
-LEARNING_RATE = 0.002
-CLASS_COUNT = 5
-FREQUENCY_LIMIT = (340, 720)
-EMBEDDING_SIZE = 256
+LEARNING_RATE = 0.001
 DISCRETE_CLASS = 256
-
-SINE_COUNT = 2
-
 BATCH_SIZE = 32
-QUEUE_CAPACITY = 64 * BATCH_SIZE
+CHUNK = 50
 
-CUDA_VISIBLE_DEVICES = 3
+CUDA_VISIBLE_DEVICES = 0
 
 LOG_INTERVAL = 100//BATCH_SIZE
 

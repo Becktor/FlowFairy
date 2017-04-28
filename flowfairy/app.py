@@ -38,18 +38,15 @@ def run(*args, **options):
             stage.before(sess, net)
             queue.start(sess)
 
-            net.begin(sess)
+            #net.begin(sess)
+
+            sess.run(tf.global_variables_initializer())
 
             try:
-                step = 0
+                step = 1
                 while not coord.should_stop() and not net.should_stop():
 
-                    net.train(sess)
-
                     stage.run(sess, step)
-
-                    if step % display_step == 0:
-                        net.display(sess, step)
 
                     step += 1
             except KeyboardInterrupt:
@@ -58,5 +55,3 @@ def run(*args, **options):
             coord.request_stop()
             queue.stop()
             coord.join(stop_grace_period_secs=5)
-
-

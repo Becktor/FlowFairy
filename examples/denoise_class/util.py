@@ -1,13 +1,5 @@
 import tensorflow as tf
 
-def embedding(l, cls, embedding_size, num_classes):
-
-     W = tf.Variable(tf.truncated_normal([num_classes, embedding_size]))
-     emb = tf.nn.embedding_lookup(W, cls)
-
-     return emb
-
-
 
 # Create some wrappers for simplicity
 def lrelu(x, leak=0.2, name="lrelu"):
@@ -36,3 +28,26 @@ def maxpool2d(x, k=2):
                           padding='SAME')
 
 
+# Create model
+def conv_net(x, weights, biases, dropout):
+    xs = tf.reshape(x, shape=[-1, sr, 1, 1])
+    # Convolution Layer
+    conv1 = conv2d(xs, weights['wc1'], biases['bc1'])
+    conv1 = maxpool2d(conv1, k=2)
+    print('conv1: ', conv1)
+    conv2 = conv2d(conv1, weights['wc2'], biases['bc2'])
+    conv2 = maxpool2d(conv2, k=2)
+    print('conv2: ', conv2)
+    #conv3 = SubpixelConv2d(x, scale=2, n_out_channel=2, name='subpixel_conv2d2')
+    conv3 = conv2d(conv2, weights['wc3'], biases['bc3'])
+
+    print('conv3: ', conv3)
+    #conv4 = PS(conv3, 2)
+    conv4 = tf.depth_to_space(conv3, 2)
+    print('conv4: ', conv4)
+    #out=
+    out = tf.reshape(conv3, [-1, weights['out'].get_shape().as_list()[0]])
+    print(out)
+    #out = tf.add(tf.matmul(out, weights['out']), biases['out'])
+    #print(out)
+    return out , conv1, conv2, conv3

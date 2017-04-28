@@ -1,7 +1,10 @@
 import tensorflow as tf
 import threading
+
 from flowfairy.conf import settings
 from flowfairy.utils import import_from_module, take
+
+from .base import Feature
 
 import itertools as it
 
@@ -22,21 +25,6 @@ def first_true(iterable, default=False, pred=None):
     # first_true([a,b], x, f) --> a if f(a) else b if f(b) else x
     return next(filter(pred, iterable), default)
 
-class Feature:
-
-    @property
-    def dtypes(self):
-        raise NotImplementedError("Features need a dtype property")
-
-    def feature(*args, **options):
-        raise NotImplementedError
-
-    def fields(self):
-        return ()
-
-    def shapes(self):
-        pass
-
 
 class FeatureManager:
 
@@ -44,23 +32,29 @@ class FeatureManager:
         self.dataloader = dataloader
 
         features = settings.FEATURES
+
         self.features = [import_from_module(s)() for s in features]
 
         self._data_gen = self.get_features()
         self._latest = next(self._data_gen)
+        self._ignored_fields = set(self._get_ignored())
         self._placeholders = None
         print(self.fields)
         print(self.dtypes)
 
+    def _get_ignored(self):
+        for ft in self.features:
+            for ignored in ft._meta.ignored_fields:
+                yield ignored
+
     def _get_shapes(self):
-        for l, field in zip(self._latest, self.fields):
-            try:
-                feature = first_true(self.features, default=None, pred=lambda ft: field in ft.fields())
-                meta = getattr(feature, 'Meta')
-                shapes = getattr(meta, 'shapes')
-                yield shapes[field]
-            except:
+        try:
+            for l, field in zip(self.filtered(), self.fields):
                 yield l.shape
+        except Exception as e:
+            if field:
+                print(e)
+                raise ValueError(f"Got a problem with {field}")
 
     @property
     def shapes(self):
@@ -68,11 +62,16 @@ class FeatureManager:
 
     @property
     def dtypes(self):
-        return [tf.as_dtype(f.dtype) for f in self._latest]
+        return [tf.as_dtype(f.dtype) for f in self.filtered()]
 
     @property
     def fields(self):
-        return list(it.chain(*[ft.fields() for ft in self.features]))
+        return set(self._latest.keys()) - self._ignored_fields
+
+    def filtered(self):
+        # Filter the dict so we only get what we want
+        return [self._latest[key] for key in self.fields]
+
 
     def get_features(self):
         for data in self.dataloader:
@@ -80,19 +79,7 @@ class FeatureManager:
             for feature in self.features:
                 data.update(feature.feature(**data))
 
-            # Filter the dict so we only get what we want
-            yield [data[key] for key in self.fields]
-
-    def _init_placeholders(self):
-        self._placeholders = [
-            tf.placeholder(dtype, shape, name=name) for dtype, shape, name in zip(self.dtypes, self.shapes, self.fields)
-        ]
-
-    @property
-    def placeholders(self):
-        if not self._placeholders:
-            self._init_placeholders()
-        return self._placeholders
+            yield data
 
     def __iter__(self):
         return self
@@ -100,9 +87,5 @@ class FeatureManager:
     def __next__(self):
         latest = self._latest
         self._latest = next(self._data_gen)
-        return latest
-
-    def batch(self, bs):
-        return [take(bs, feature) for feature in next(self)]
-
+        return self.filtered()
 

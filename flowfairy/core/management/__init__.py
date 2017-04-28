@@ -30,6 +30,7 @@ def ensure_settings():
 
     else:
         print('Warning, can not find any settings', file=sys.stderr)
+        sys.exit()
 
 
 def get_commands():
@@ -42,6 +43,9 @@ def execute():
     ensure_settings()
 
     parser = ArgumentParser()
+    from flowfairy.conf import settings
+
+    settings.add_arguments(parser)
 
     command = load_command(sys.argv[1])
     command.add_arguments(parser)
@@ -49,5 +53,6 @@ def execute():
     args = parser.parse_args(sys.argv[2:])
     options = vars(args)
 
+    settings.apply_arguments(**options)
     command.handle(**options)
 
