@@ -60,19 +60,19 @@ class Net:
         # Store layers weight & bias
 
         weights = {
-            'wc1': tf.Variable(tf.truncated_normal([256, 1, 1, 4])),
-            'wc2': tf.Variable(tf.truncated_normal([128, 1, embedding_size+4, embedding_size//4])),
-            'wc3': tf.Variable(tf.truncated_normal([64, 1, embedding_size//4, 4])),
-            'wc4': tf.Variable(tf.truncated_normal([64, 1, 1, 8])),
-            'wc5': tf.Variable(tf.truncated_normal([1, 1, 8, 256])),
+            'wc1': tf.Variable(tf.truncated_normal([512, 1, 1, 8])),
+            'wc2': tf.Variable(tf.truncated_normal([256, 1, embedding_size+8, embedding_size+16])),
+            'wc3': tf.Variable(tf.truncated_normal([64, 1, embedding_size+16, 4])),
+            'wc4': tf.Variable(tf.truncated_normal([64, 1, 1, embedding_size//8])),
+            'wc5': tf.Variable(tf.truncated_normal([8, 1, embedding_size//8, 256])),
             'out': tf.Variable(tf.truncated_normal([sr, 256]))
         }
 
         biases = {
-            'bc1': tf.Variable(tf.truncated_normal([4])),
-            'bc2': tf.Variable(tf.truncated_normal([embedding_size//4])),
+            'bc1': tf.Variable(tf.truncated_normal([8])),
+            'bc2': tf.Variable(tf.truncated_normal([embedding_size+16])),
             'bc3': tf.Variable(tf.truncated_normal([4])),
-            'bc4': tf.Variable(tf.truncated_normal([8])),
+            'bc4': tf.Variable(tf.truncated_normal([embedding_size//8])),
             'bc5': tf.Variable(tf.truncated_normal([256])),
             'out': tf.Variable(tf.truncated_normal([sr]))
         }

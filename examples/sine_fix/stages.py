@@ -41,7 +41,7 @@ class SummaryStage(Stage):
         tf.summary.image('graph', self.image)
 
         self.merged = tf.summary.merge_all()
-        self.writer = tf.summary.FileWriter(os.path.join(settings.LOG_DIR, str(datetime.now())), sess.graph)
+        self.writer = tf.summary.FileWriter(os.path.join(settings.LOG_DIR, settings.LOGNAME), sess.graph)
 
     def plot(self, sess):
         self.reset_fig()
