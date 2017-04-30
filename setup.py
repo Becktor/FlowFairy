@@ -6,7 +6,7 @@ exclude_pkgs = ['flowfairy.bin']
 setup(
     name="flowfairy",
     version='0.0.1.dev1',
-    license='...',
+    license='MIT',
     packages=find_packages(exclude=exclude_pkgs),
     entry_points = {'console_scripts': [
         'fairy=flowfairy.core.management:execute'
