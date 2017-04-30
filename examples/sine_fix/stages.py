@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from flowfairy.core.stage import register, Stage, stage
 from flowfairy.conf import settings
 
+log_dir = os.path.join(settings.LOG_DIR, settings.LOGNAME)
 
 @register(100)
 class SummaryStage(Stage):
@@ -41,7 +42,7 @@ class SummaryStage(Stage):
         tf.summary.image('graph', self.image)
 
         self.merged = tf.summary.merge_all()
-        self.writer = tf.summary.FileWriter(os.path.join(settings.LOG_DIR, settings.LOGNAME), sess.graph)
+        self.writer = tf.summary.FileWriter(log_dir, sess.graph)
 
     def plot(self, sess):
         self.reset_fig()
@@ -49,8 +50,8 @@ class SummaryStage(Stage):
         res, x, y, emb = sess.run([ self.pred, self.x, self.y, self.emb ])
         res = np.argmax(res, 2)
 
-        start = 1000
-        end = start + settings.EMBEDDING_SIZE
+        start = np.random.randint(500)
+        end = start + 128
 
         plt.subplot('111').plot(res[0,start:end],'r')
         plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)
@@ -79,3 +80,12 @@ class TrainingStage(Stage):
 
     def run(self, sess, i):
         sess.run(self.optimizer)
+
+
+@register(1000)
+class SavingStage(Stage):
+    def before(self, sess, net):
+        self.saver = tf.train.Saver()
+
+    def run(self, sess, i):
+        self.saver.save(sess, log_dir, global_step=i)

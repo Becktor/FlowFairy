@@ -41,7 +41,8 @@ def conv_net(x, cls, weights, biases, dropout):
 
     #convblock 4
     conv4 = tf.depth_to_space(conv3, 2) #upconv
-    conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 1]) # reshape upconvolution to have proper shape
+    c1shape = conv1.get_shape().as_list()
+    conv4 = tf.reshape(conv4, shape=[c1shape[0], sr, 1, -1]) # reshape upconvolution to have proper shape
     conv4 = conv2d(conv4, weights['wc4'], biases['bc4'])
     print('conv4: ', conv4)
 
@@ -60,19 +61,19 @@ class Net:
         # Store layers weight & bias
 
         weights = {
-            'wc1': tf.Variable(tf.truncated_normal([512, 1, 1, 8])),
-            'wc2': tf.Variable(tf.truncated_normal([256, 1, embedding_size+8, embedding_size+16])),
-            'wc3': tf.Variable(tf.truncated_normal([64, 1, embedding_size+16, 4])),
-            'wc4': tf.Variable(tf.truncated_normal([64, 1, 1, embedding_size//8])),
-            'wc5': tf.Variable(tf.truncated_normal([8, 1, embedding_size//8, 256])),
+            'wc1': tf.Variable(tf.truncated_normal([128, 1, 1, 8])),
+            'wc2': tf.Variable(tf.truncated_normal([64, 1, embedding_size+8, embedding_size+16])),
+            'wc3': tf.Variable(tf.truncated_normal([64, 1, embedding_size+16, embedding_size+32])),
+            'wc4': tf.Variable(tf.truncated_normal([128, 1, 24, 8])),
+            'wc5': tf.Variable(tf.truncated_normal([32, 1, embedding_size//8, 256])),
             'out': tf.Variable(tf.truncated_normal([sr, 256]))
         }
 
         biases = {
             'bc1': tf.Variable(tf.truncated_normal([8])),
             'bc2': tf.Variable(tf.truncated_normal([embedding_size+16])),
-            'bc3': tf.Variable(tf.truncated_normal([4])),
-            'bc4': tf.Variable(tf.truncated_normal([embedding_size//8])),
+            'bc3': tf.Variable(tf.truncated_normal([embedding_size+32])),
+            'bc4': tf.Variable(tf.truncated_normal([8])),
             'bc5': tf.Variable(tf.truncated_normal([256])),
             'out': tf.Variable(tf.truncated_normal([sr]))
         }
