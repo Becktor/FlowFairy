@@ -8,7 +8,7 @@ FEATURES = [
     'feature.FrequencyGen',
     'feature.SineGen',
     'feature.NoisySineGen',
-    'feature.LabelGen',
+    'feature.ConvertToClasses',
     'feature.Dropout',
     'feature.Mask',
     'feature.Chunk'

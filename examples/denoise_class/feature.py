@@ -15,6 +15,9 @@ class FrequencyGen(Feature):
         frqs = np.random.randint(340, 720)
         return {'frequency': frqs}
 
+    class Meta:
+        ignored_fields = ('frequency',)
+
 
 def classify(val):
     val = (val-np.min(val))/(np.max(val)-np.min(val))
@@ -38,7 +41,7 @@ class NoisySineGen(Feature):
     def fields(self):
         return ('x',)
 
-class LabelGen(Feature):
+class ConvertToClasses(Feature):
 
     def feature(self, x, y, **kwargs):
         return {'x':classify(x), 'y':classify(y)}
