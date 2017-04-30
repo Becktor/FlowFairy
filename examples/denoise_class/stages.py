@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from flowfairy.core.stage import register, Stage
 from flowfairy.conf import settings
 
+log_dir = os.path.join(settings.LOG_DIR, settings.LOGNAME)
+
 @register(500)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
