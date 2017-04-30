@@ -10,10 +10,6 @@ import matplotlib.pyplot as plt
 from flowfairy.core.stage import register, Stage
 from flowfairy.conf import settings
 
-def norm(val):
-    val = (val-tf.minimum(val))/(tf.maximum(val)-tf.minimum(val))
-    return val
-
 @register(500)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
@@ -34,23 +30,24 @@ class SummaryStage(Stage):
         self.pred = net.pred
         self.x = net.x
         self.y = net.y
+        #save sound
         arg = tf.argmax(self.pred,2)
-        tf.summary.audio('x', self.x, settings.SAMPLERATE)
+        tf.summary.audio('x', self.y, settings.SAMPLERATE)
         tf.summary.audio('pred',tf.cast(arg,tf.float32), settings.SAMPLERATE)
         self.chunk=net.chunk
+        #save fig
         self.reset_fig()
         img = self.fig2rgb_array()
         self.image = tf.Variable(np.zeros(img.shape, dtype=np.uint8))
-
         tf.summary.image('graph', self.image)
-
+        #merge tf summaries
         self.merged = tf.summary.merge_all()
         self.writer = tf.summary.FileWriter(os.path.join(settings.LOG_DIR, str(datetime.now())), sess.graph)
 
     def plot(self, sess):
         self.reset_fig()
 
-        res, x, y, c = sess.run([self.pred, self.x, self.y ,self.chunk])
+        res, x, y, c = sess.run([self.pred, self.x, self.y, self.chunk])
         res = np.argmax(res, 2)
         start = c[0]-50
         end = (start+settings.CHUNK+100)
@@ -80,3 +77,11 @@ class TrainingStage(Stage):
 
     def run(self, sess, i):
         sess.run(self.optimizer)
+
+@register(1000)
+class SavingStage(Stage):
+    def before(self, sess, net):
+        self.saver = tf.train.Saver()
+
+    def run(self, sess, i):
+        self.saver.save(sess, log_dir, global_step=i)
