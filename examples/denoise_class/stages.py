@@ -34,8 +34,8 @@ class SummaryStage(Stage):
         self.y = net.y
         #save sound
         arg = tf.argmax(self.pred,2)
-        tf.summary.audio('x', self.y, settings.SAMPLERATE)
-        tf.summary.audio('pred',tf.cast(arg,tf.float32), settings.SAMPLERATE)
+        tf.summary.audio('x', tf.cast(self.y, tf.float32), settings.SAMPLERATE)
+        tf.summary.audio('pred',tf.cast(arg, tf.float32), settings.SAMPLERATE)
         self.chunk=net.chunk
         #save fig
         self.reset_fig()
