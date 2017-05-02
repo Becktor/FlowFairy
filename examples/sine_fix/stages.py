@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import os
+import io
 from datetime import datetime
 import matplotlib
 matplotlib.use('Agg')
@@ -10,7 +11,9 @@ import matplotlib.pyplot as plt
 from flowfairy.core.stage import register, Stage, stage
 from flowfairy.conf import settings
 
-log_dir = os.path.join(settings.LOG_DIR, settings.LOGNAME)
+
+def get_log_dir():
+    return os.path.join(settings.LOG_DIR, settings.LOGNAME)
 
 @register(100)
 class SummaryStage(Stage):
@@ -37,12 +40,14 @@ class SummaryStage(Stage):
         self.reset_fig()
         img = self.fig2rgb_array()
 
-        self.image = tf.Variable(np.zeros(img.shape, dtype=np.uint8), trainable=False)
+        self.image_in = tf.placeholder(np.uint8, shape=img.shape)
+        self.image = tf.Variable(np.zeros(img.shape, dtype=np.uint8), trainable=False, name='graph_image')
+        self.image_assign = self.image.assign(self.image_in)
 
         tf.summary.image('graph', self.image)
 
         self.merged = tf.summary.merge_all()
-        self.writer = tf.summary.FileWriter(log_dir, sess.graph)
+        self.writer = tf.summary.FileWriter(get_log_dir(), sess.graph)
 
     def plot(self, sess):
         self.reset_fig()
@@ -61,7 +66,7 @@ class SummaryStage(Stage):
 
     def draw_img(self, sess):
         self.plot(sess)
-        sess.run(self.image.assign(self.fig2rgb_array()))
+        sess.run(self.image_assign, feed_dict={self.image_in: self.fig2rgb_array()})
 
     def run(self, sess, i):
         self.draw_img(sess)
@@ -82,10 +87,10 @@ class TrainingStage(Stage):
         sess.run(self.optimizer)
 
 
-@register(1000)
+@register(10000)
 class SavingStage(Stage):
     def before(self, sess, net):
         self.saver = tf.train.Saver()
 
     def run(self, sess, i):
-        self.saver.save(sess, log_dir, global_step=i)
+        self.saver.save(sess, get_log_dir(), global_step=i)
