@@ -41,10 +41,10 @@ def conv_net(x, weights, biases, dropout):
 
 class Net:
 
-    def init(self, x, y, m, chunk, keep_prob):
+    def __init__(self):
         # Store layers weight & bias
 
-        weights = {
+        self.weights = {
             'wc1': tf.Variable(tf.truncated_normal([128, 1, 1, 4])),
             'wc2': tf.Variable(tf.truncated_normal([64, 1, 4, 16])),
             'wc3': tf.Variable(tf.truncated_normal([64, 1, 16, 4])),
@@ -53,7 +53,7 @@ class Net:
             'out': tf.Variable(tf.truncated_normal([sr, 256]))
         }
 
-        biases = {
+        self.biases = {
             'bc1': tf.Variable(tf.truncated_normal([4])),
             'bc2': tf.Variable(tf.truncated_normal([16])),
             'bc3': tf.Variable(tf.truncated_normal([4])),
@@ -62,36 +62,38 @@ class Net:
             'out': tf.Variable(tf.truncated_normal([sr]))
         }
 
-        self.x = x
-        self.y = tf.cast(y, tf.int64)
-        self.chunk = chunk
 
-        # Construct model
-        pred = conv_net(self.x, weights, biases, keep_prob)
-        self.pred = pred
+    def feedforward(self, x, y, chunk, keep_prob):
+        pred = conv_net(x, self.weights, self.biases, keep_prob)
 
-        # Define loss and optimizer
-        # Construct model and define variables
-        pred = conv_net(self.x, weights, biases, keep_prob)
-
-        target_output = tf.reshape(self.y,[-1])
+        target_output = tf.reshape(y,[-1])
         prediction = tf.reshape(pred,[-1, discrete_class])
 
         # Define loss and optimizer
         with tf.name_scope('cost'):
-            self.sparse = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = prediction,
+            sparse = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = prediction,
                                                                     labels = target_output)
-            self.cost = tf.reduce_mean(self.sparse)
+            cost = tf.reduce_mean(sparse)
 
-        #Optimizer
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.cost)
-
-        # Evaluate model
-        correct_pred = tf.equal(tf.argmax(pred, 2), self.y)
+        correct_pred = tf.equal(tf.argmax(pred, 2), y)
         with tf.name_scope('accuracy'):
-            self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+            accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-        self.loss = self.cost
+        return pred, cost, accuracy, chunk
+
+    def train(self, **kwargs):
+        self.train_x = kwargs['x']
+        self.train_y = kwargs['y']
+
+        self.train_pred, self.train_cost, self.train_acc, self.train_chunk = self.feedforward(**kwargs)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.train_cost)
+
+
+    def validation(self, **kwargs):
+        self.val_x = kwargs['x']
+        self.val_y = kwargs['y']
+
+        self.val_pred, self.val_cost, self.val_acc, self.val_chunk = self.feedforward(**kwargs)
 
 
     def begin(self, session):
