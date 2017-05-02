@@ -7,7 +7,10 @@ import numpy as np
 samplerate = settings.SAMPLERATE
 duration = settings.DURATION
 chunk = settings.CHUNK
-
+frequency_count = settings.CLASS_COUNT
+frq_min, frq_max = settings.FREQUENCY_LIMIT
+step = (frq_max - frq_min) / frequency_count
+sine_count = settings.SINE_COUNT
 
 class FrequencyGen(Feature):
 
@@ -25,12 +28,19 @@ def classify(val):
 
 class SineGen(Feature):
     arr = np.arange(samplerate, dtype=np.float32) * 2 * np.pi
+    frqs = np.arange(frq_min, frq_max, step) / samplerate
+    choices = np.arange(frequency_count)
 
-    def feature(self, frequency, **kwargs):
-        return {'y':np.sin(self.arr * (frequency)/samplerate)}
+    def feature(self, **kwargs):
+        choice = np.random.choice(self.choices, size=(2,1), replace=False)
 
-    def fields(self):
-        return ('y',)
+        sines = np.tile(self.arr, (2,1))
+        chosen_frqs = self.frqs[choice]
+
+        y = np.sin(sines * chosen_frqs).astype('float32')
+        y = y.sum(axis=0)
+
+        return {'y': y}
 
 class NoisySineGen(Feature):
 
