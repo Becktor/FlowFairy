@@ -1,5 +1,6 @@
 import tensorflow as tf
 import threading
+import numpy as np
 
 from flowfairy.conf import settings
 from flowfairy.utils import import_from_module, take
@@ -38,7 +39,7 @@ class FeatureManager:
         self._data_gen = self.get_features()
         self._latest = next(self._data_gen)
         self._ignored_fields = set(self._get_ignored())
-        self._placeholders = None
+        self._ensure_types()
         print(self.fields)
         print(self.dtypes)
 
@@ -59,6 +60,14 @@ class FeatureManager:
     @property
     def shapes(self):
         return list(self._get_shapes())
+
+    type_error_string = 'The feature {field} needs to have a {attr}. Consider wrapping it with np.array().'
+    def _ensure_types(self):
+        for f, field in zip(self.filtered(), self.fields):
+            if not hasattr(f, 'dtype'):
+                raise ValueError(self.type_error_string.format(field=field, attr='dtype'))
+            if not hasattr(f, 'shape'):
+                raise ValueError(self.type_error_string.format(field=field, attr='shape'))
 
     @property
     def dtypes(self):

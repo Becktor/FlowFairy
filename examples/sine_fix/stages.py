@@ -29,30 +29,33 @@ class SummaryStage(Stage):
         self.figure.clf()
 
     def before(self, sess, net):
-        tf.summary.scalar('acc', net.accuracy)
-        tf.summary.scalar('cost', net.cost)
+        tf.summary.scalar('train_acc', net.train_acc)
+        tf.summary.scalar('train_cost', net.train_cost)
+        tf.summary.scalar('val_acc', net.val_acc)
+        tf.summary.scalar('val_cost', net.val_cost)
 
-        self.pred = net.pred
-        self.x = net.x
-        self.y = net.y
-        self.emb = net.embedding
+        self.net = net
 
         self.reset_fig()
         img = self.fig2rgb_array()
 
-        self.image_in = tf.placeholder(np.uint8, shape=img.shape)
-        self.image = tf.Variable(np.zeros(img.shape, dtype=np.uint8), trainable=False, name='graph_image')
-        self.image_assign = self.image.assign(self.image_in)
+        self.train_image_in = tf.placeholder(np.uint8, shape=img.shape)
+        self.train_image = tf.Variable(np.zeros(img.shape, dtype=np.uint8), trainable=False, name='train_graph_image')
+        self.train_image_assign = self.train_image.assign(self.train_image_in)
+        tf.summary.image('train_graph', self.train_image)
 
-        tf.summary.image('graph', self.image)
+        self.val_image_in = tf.placeholder(np.uint8, shape=img.shape)
+        self.val_image = tf.Variable(np.zeros(img.shape, dtype=np.uint8), trainable=False, name='val_graph_image')
+        self.val_image_assign = self.val_image.assign(self.val_image_in)
+        tf.summary.image('val_graph', self.val_image)
 
         self.merged = tf.summary.merge_all()
         self.writer = tf.summary.FileWriter(get_log_dir(), sess.graph)
 
-    def plot(self, sess):
+    def plot(self, sess, pred, x, y):
         self.reset_fig()
 
-        res, x, y, emb = sess.run([ self.pred, self.x, self.y, self.emb ])
+        res, x, y = sess.run([ pred, x, y ])
         res = np.argmax(res, 2)
 
         start = np.random.randint(500)
@@ -61,12 +64,14 @@ class SummaryStage(Stage):
         plt.subplot('111').plot(res[0,start:end],'r')
         plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)
         plt.subplot('111').plot(x[0,start:end],'g', alpha=0.5)
-        plt.subplot('111').plot(emb[0])
 
 
     def draw_img(self, sess):
-        self.plot(sess)
-        sess.run(self.image_assign, feed_dict={self.image_in: self.fig2rgb_array()})
+        self.plot(sess, self.net.train_pred, self.net.train_x, self.net.train_y)
+        sess.run(self.train_image_assign, feed_dict={self.train_image_in: self.fig2rgb_array()})
+
+        self.plot(sess, self.net.val_pred, self.net.val_x, self.net.val_y)
+        sess.run(self.val_image_assign, feed_dict={self.val_image_in: self.fig2rgb_array()})
 
     def run(self, sess, i):
         self.draw_img(sess)

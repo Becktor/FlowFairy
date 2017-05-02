@@ -15,30 +15,22 @@ def classify(val):
     val = (val-np.min(val))/(np.max(val)-np.min(val))
     return np.floor(val*255)
 
-class FrequencyGen(Feature):
-
-    def feature(self):
-        return {'frequency': frqs[frq], 'frequency_id': np.array(frq, dtype=np.int32)}
-
-    class Meta:
-        ignored_fields = ('frequency',)
-
 class SineGen(Feature):
-    arr = np.arange(samplerate, dtype=np.float32) * 2 * np.pi
-    frqs = np.arange(frq_min, frq_max, step) / samplerate
-    choices = np.arange(frequency_count)
+    arr = np.arange(samplerate, dtype=np.float32) * 2 * np.pi / samplerate
 
-    def feature(self, **kwargs):
-        choice = np.random.choice(self.choices, size=(2,1), replace=False)
+    def feature(self, initial, **kwargs):
+        frq1, frq2 = initial
 
         sines = np.tile(self.arr, (2,1))
-        chosen_frqs = self.frqs[choice]
 
-        x = np.sin(sines * chosen_frqs).astype('float32')
+        x = np.sin(sines * np.array([[ frq1[1] ], [frq2[1]]])).astype('float32')
         y = x[0]
         x = x.sum(axis=0)
 
-        return {'y': y, 'x': x, 'frqid': np.array(chosen_frqs[0], dtype=np.int32)}
+        return {'y': y, 'x': x, 'frqid': np.array(frq1[0], dtype=np.int32)}
+
+    class Meta:
+        ignored_fields = ('initial',)
 
 
 class NoisySineGen(Feature):
@@ -63,4 +55,4 @@ class Dropout(Feature):
 class ConvertToClasses(Feature):
 
     def feature(self, x, y, **kwargs):
-        return {'x': classify(x), 'y': classify(y)}
+        return {'x': classify(x), 'y': classify(y).astype('int64')}
