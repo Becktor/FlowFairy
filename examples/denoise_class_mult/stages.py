@@ -80,10 +80,10 @@ class TrainingStage(Stage):
     def run(self, sess, i):
         sess.run(self.optimizer)
 
-@register(1000)
-class SavingStage(Stage):
-    def before(self, sess, net):
-        self.saver = tf.train.Saver()
-
-    def run(self, sess, i):
-        self.saver.save(sess, log_dir, global_step=i)
+#@register(1000)
+#class SavingStage(Stage):
+#    def before(self, sess, net):
+#        self.saver = tf.train.Saver()
+#
+#    def run(self, sess, i):
+#        self.saver.save(sess, log_dir, global_step=i)
