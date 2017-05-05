@@ -1,6 +1,6 @@
 import tensorflow as tf
 from flowfairy.conf import settings
-from util import lrelu, conv2d, maxpool2d, embedding
+from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d
 
 discrete_class = settings.DISCRETE_CLASS
 batch_size = settings.BATCH_SIZE
@@ -8,6 +8,7 @@ samplerate = sr = settings.SAMPLERATE
 dropout = settings.DROPOUT
 learning_rate = settings.LEARNING_RATE
 embedding_size = settings.EMBEDDING_SIZE
+embedding_input_size = settings.EMBEDDING_INPUT_SIZE
 num_classes = settings.CLASS_COUNT
 
 def expand(l, emb, embedding_size):
@@ -30,10 +31,26 @@ def conv_net(x, cls, weights, biases, dropout):
         pool1 = maxpool2d(conv1, k=2)
     print('conv1: ', pool1)
 
-    with tf.variable_scope('embedding'):
-        emb1 = embedding(pool1, cls, embedding_size, num_classes)
-    expanded = expand(pool1, emb1, embedding_size)
-    expanded = tf.concat([pool1, expanded], axis=3)
+    cls = cls[-1, :embedding_input_size]
+    cls = tf.reshape(cls, [-1, embedding_input_size, 1, 1])
+
+    with tf.name_scope('embedding'):
+        with tf.variable_scope('embed1'):
+            embed = conv2d(cls, [64, 1, 1, 4], strides=8)
+            embed = maxpool2d(embed, k=4)
+
+        with tf.variable_scope('embed2'):
+            embed = conv2d(embed, [8, 1, 4, num_classes], strides=4)
+            embed = avgpool2d(embed, k=16)
+        embed = tf.reshape(embed, [-1, num_classes])
+        x_cls = tf.nn.softmax(embed)
+        x_cls = tf.argmax(x_cls, axis=1)
+        print(x_cls.shape)
+
+        with tf.variable_scope('embedding'):
+            emb1 = embedding(pool1, x_cls, embedding_size, num_classes)
+        expanded = expand(pool1, emb1, embedding_size)
+        expanded = tf.concat([pool1, expanded], axis=3)
 
     #convblock 2
     wc2 = weights[1]
@@ -63,13 +80,13 @@ def conv_net(x, cls, weights, biases, dropout):
 
     wc5 = weights[4]
     with tf.variable_scope(wc5['name']):
-        conv5 = conv2d(conv4, wc5['shape'])
+        conv5 = conv2d(conv5, wc5['shape'])
     print('conv5: ', conv5)
 
     wout = weights[5]
     #out
     out = tf.reshape(conv5, [-1, wout['shape'][0], 256])
-    return out, emb1
+    return out, embed
 
 class Net:
 
@@ -81,7 +98,7 @@ class Net:
             ('wc2', [64, 1, embedding_size+4, 18]),
             ('wc3', [32, 1, 18, 4]),
             ('wc4', [32, 1, 1, 8]),
-            ('wc5', [8, 1, 8, 256]),
+            ('wc5', [8, 1, 12, 256]),
             ('out', [sr, 256])
         ]
         self.weights = [ {'name': name, 'shape': shape} for name, shape in weights ]
@@ -95,8 +112,8 @@ class Net:
             ('out', [sr])
         ]
 
-    def feedforward(self, x, y, frqid, keep_prob):
-        pred, embedding = conv_net(x, frqid, self.weights, None, keep_prob)
+    def feedforward(self, x, y, frqid, keep_prob, cls):
+        pred, embedding = conv_net(x, cls, self.weights, None, keep_prob)
 
         target_output = tf.reshape(y,[-1])
         prediction = tf.reshape(pred,[-1, discrete_class])

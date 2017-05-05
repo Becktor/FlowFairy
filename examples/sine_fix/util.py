@@ -41,3 +41,7 @@ def maxpool2d(x, k=2):
                           padding='SAME')
 
 
+def avgpool2d(x, k=2):
+    # MaxPool2D wrapper
+    return tf.nn.avg_pool(x, ksize=[1, k, k, 1], strides=[1, k, k, 1],
+                          padding='SAME')
