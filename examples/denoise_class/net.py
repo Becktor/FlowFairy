@@ -9,7 +9,7 @@ learning_rate = settings.LEARNING_RATE
 discrete_class = settings.DISCRETE_CLASS
 
 def conv_net(x, weights, biases, dropout):
-    xs = tf.reshape(x, shape = [-1, sr, 1, 1] )
+    xs = tf.reshape(x, shape = [32, sr, 1, 1] )
     #convblock 1
     conv1 = conv2d(xs, weights['wc1'], biases['bc1'])
     pool1 = maxpool2d(conv1, k=2)
@@ -26,13 +26,13 @@ def conv_net(x, weights, biases, dropout):
 
     #convblock 4
     conv4 = tf.depth_to_space(conv3, 2) #upconv
-    conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 1]) # reshape upconvolution to have proper shape
+    conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 2]) # reshape upconvolution to have proper shape
     conv4 = conv2d(conv4, weights['wc4'], biases['bc4'])
     print('conv4: ', conv4)
 
     #convblock 5
     conv5 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
-    conv5 = conv2d(conv4, weights['wc5'], biases['bc5'])
+    conv5 = conv2d(conv5, weights['wc5'], biases['bc5'])
     print('conv5: ', conv5)
     #out
     out = tf.reshape(conv5, [-1, weights['out'].get_shape().as_list()[0], 256])
@@ -41,57 +41,59 @@ def conv_net(x, weights, biases, dropout):
 
 class Net:
 
-    def init(self, x, y, m, chunk, keep_prob):
+    def __init__(self):
         # Store layers weight & bias
 
-        weights = {
-            'wc1': tf.Variable(tf.truncated_normal([128, 1, 1, 4])),
-            'wc2': tf.Variable(tf.truncated_normal([64, 1, 4, 16])),
-            'wc3': tf.Variable(tf.truncated_normal([64, 1, 16, 4])),
-            'wc4': tf.Variable(tf.truncated_normal([64, 1, 1, 8])),
-            'wc5': tf.Variable(tf.truncated_normal([1, 1, 8, 256])),
+        self.weights = {
+            'wc1': tf.Variable(tf.truncated_normal([256, 1, 1, 4])),
+            'wc2': tf.Variable(tf.truncated_normal([128, 1, 4, 16])),
+            'wc3': tf.Variable(tf.truncated_normal([128, 1, 16, 8])),
+            'wc4': tf.Variable(tf.truncated_normal([128, 1, 2, 16])),
+            'wc5': tf.Variable(tf.truncated_normal([1, 1, 20, 256])),
             'out': tf.Variable(tf.truncated_normal([sr, 256]))
         }
 
-        biases = {
+        self.biases = {
             'bc1': tf.Variable(tf.truncated_normal([4])),
             'bc2': tf.Variable(tf.truncated_normal([16])),
-            'bc3': tf.Variable(tf.truncated_normal([4])),
-            'bc4': tf.Variable(tf.truncated_normal([8])),
+            'bc3': tf.Variable(tf.truncated_normal([8])),
+            'bc4': tf.Variable(tf.truncated_normal([16])),
             'bc5': tf.Variable(tf.truncated_normal([256])),
             'out': tf.Variable(tf.truncated_normal([sr]))
         }
 
-        self.x = x
-        self.y = tf.cast(y, tf.int64)
-        self.chunk = chunk
 
-        # Construct model
-        pred = conv_net(self.x, weights, biases, keep_prob)
-        self.pred = pred
+    def feedforward(self, x, y, chunk, keep_prob):
+        pred = conv_net(x, self.weights, self.biases, dropout)
 
-        # Define loss and optimizer
-        # Construct model and define variables
-        pred = conv_net(self.x, weights, biases, keep_prob)
-
-        target_output = tf.reshape(self.y,[-1])
+        target_output = tf.reshape(y,[-1])
         prediction = tf.reshape(pred,[-1, discrete_class])
 
         # Define loss and optimizer
         with tf.name_scope('cost'):
-            self.sparse = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = prediction,
+            sparse = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = prediction,
                                                                     labels = target_output)
-            self.cost = tf.reduce_mean(self.sparse)
+            cost = tf.reduce_mean(sparse)
 
-        #Optimizer
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.cost)
-
-        # Evaluate model
-        correct_pred = tf.equal(tf.argmax(pred, 2), self.y)
+        correct_pred = tf.equal(tf.argmax(pred, 2), y)
         with tf.name_scope('accuracy'):
-            self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+            accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-        self.loss = self.cost
+        return pred, cost, accuracy, chunk
+
+    def train(self, **kwargs):
+        self.train_x = kwargs['x']
+        self.train_y = kwargs['y']
+
+        self.train_pred, self.train_cost, self.train_acc, self.train_chunk = self.feedforward(**kwargs)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.train_cost)
+
+
+    def validation(self, **kwargs):
+        self.val_x = kwargs['x']
+        self.val_y = kwargs['y']
+
+        self.val_pred, self.val_cost, self.val_acc, self.val_chunk = self.feedforward(**kwargs)
 
 
     def begin(self, session):

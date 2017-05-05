@@ -1,22 +1,11 @@
 from flowfairy.feature import Feature
 from flowfairy.conf import settings
-
 import numpy as np
 
 
 samplerate = settings.SAMPLERATE
 duration = settings.DURATION
 chunk = settings.CHUNK
-
-
-class FrequencyGen(Feature):
-
-    def feature(self):
-        frqs = np.random.randint(340, 720)
-        return {'frequency': frqs}
-
-    class Meta:
-        ignored_fields = ('frequency',)
 
 
 def classify(val):
@@ -26,11 +15,15 @@ def classify(val):
 class SineGen(Feature):
     arr = np.arange(samplerate, dtype=np.float32) * 2 * np.pi
 
-    def feature(self, frequency, **kwargs):
+    def feature(self, initial, **kwargs):
+        frequency = initial
         return {'y':np.sin(self.arr * (frequency)/samplerate)}
 
     def fields(self):
         return ('y',)
+
+    class Meta:
+        ignored_fields=('initial',)
 
 class NoisySineGen(Feature):
 
@@ -44,15 +37,7 @@ class NoisySineGen(Feature):
 class ConvertToClasses(Feature):
 
     def feature(self, x, y, **kwargs):
-        return {'x':classify(x), 'y':classify(y)}
-
-class Mask(Feature):
-
-    def feature(self, **kwargs):
-        return {'m': np.ones(samplerate * duration, dtype=np.float32)}
-
-    def fields(self):
-        return ('m',)
+        return {'x':classify(x), 'y':classify(y).astype('int64')}
 
 class Chunk(Feature):
 
