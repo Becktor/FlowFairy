@@ -18,7 +18,7 @@ def get_log_dir():
 def norm(tensor):
     return tf.div((tensor - tf.reduce_min(tensor)), (tf.reduce_max(tensor) - tf.reduce_min(tensor)))
 
-@register(1)
+@register(250)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
         self.figure.canvas.draw()
@@ -40,7 +40,7 @@ class SummaryStage(Stage):
 
         arg = tf.argmax(self.net.train_pred, 2)
         tf.summary.audio('target', norm(tf.cast(self.net.train_y, tf.float32)), settings.SAMPLERATE)
-        tf.summary.audio('pred',norm(tf.cast(arg, tf.float32)), settings.SAMPLERATE)
+        tf.summary.audio('pred', norm(tf.cast(arg, tf.float32)), settings.SAMPLERATE)
 
         self.reset_fig()
         img = self.fig2rgb_array()
@@ -77,7 +77,7 @@ class SummaryStage(Stage):
         self.plot(sess, self.net.train_pred, self.net.train_x, self.net.train_y, self.net.train_chunk)
         sess.run(self.train_image_assign, feed_dict={self.train_image_in: self.fig2rgb_array()})
 
-        self.plot(sess, self.net.val_pred, self.net.val_x, self.net.val_y, self.net.train_chunk)
+        self.plot(sess, self.net.val_pred, self.net.val_x, self.net.val_y, self.net.val_chunk)
         sess.run(self.val_image_assign, feed_dict={self.val_image_in: self.fig2rgb_array()})
 
     def run(self, sess, i):
