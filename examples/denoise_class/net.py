@@ -9,7 +9,7 @@ learning_rate = settings.LEARNING_RATE
 discrete_class = settings.DISCRETE_CLASS
 
 def conv_net(x, weights, biases, dropout):
-    xs = tf.reshape(x, shape = [32, sr, 1, 1] )
+    xs = tf.reshape(x, shape = [-1, sr, 1, 1] )
     #convblock 1
     conv1 = conv2d(xs, weights['wc1'], biases['bc1'])
     pool1 = maxpool2d(conv1, k=2)
@@ -26,7 +26,7 @@ def conv_net(x, weights, biases, dropout):
 
     #convblock 4
     conv4 = tf.depth_to_space(conv3, 2) #upconv
-    conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 2]) # reshape upconvolution to have proper shape
+    conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 4]) # reshape upconvolution to have proper shape
     conv4 = conv2d(conv4, weights['wc4'], biases['bc4'])
     print('conv4: ', conv4)
 
@@ -45,18 +45,18 @@ class Net:
         # Store layers weight & bias
 
         self.weights = {
-            'wc1': tf.Variable(tf.truncated_normal([256, 1, 1, 4])),
-            'wc2': tf.Variable(tf.truncated_normal([128, 1, 4, 16])),
-            'wc3': tf.Variable(tf.truncated_normal([128, 1, 16, 8])),
-            'wc4': tf.Variable(tf.truncated_normal([128, 1, 2, 16])),
-            'wc5': tf.Variable(tf.truncated_normal([1, 1, 20, 256])),
+            'wc1': tf.Variable(tf.truncated_normal([128, 1, 1, 8])),
+            'wc2': tf.Variable(tf.truncated_normal([64, 1, 8, 32])),
+            'wc3': tf.Variable(tf.truncated_normal([64, 1, 32, 16])),
+            'wc4': tf.Variable(tf.truncated_normal([64, 1, 4, 16])),
+            'wc5': tf.Variable(tf.truncated_normal([1, 1, 24, 256])),
             'out': tf.Variable(tf.truncated_normal([sr, 256]))
         }
 
         self.biases = {
-            'bc1': tf.Variable(tf.truncated_normal([4])),
-            'bc2': tf.Variable(tf.truncated_normal([16])),
-            'bc3': tf.Variable(tf.truncated_normal([8])),
+            'bc1': tf.Variable(tf.truncated_normal([8])),
+            'bc2': tf.Variable(tf.truncated_normal([32])),
+            'bc3': tf.Variable(tf.truncated_normal([16])),
             'bc4': tf.Variable(tf.truncated_normal([16])),
             'bc5': tf.Variable(tf.truncated_normal([256])),
             'out': tf.Variable(tf.truncated_normal([sr]))
