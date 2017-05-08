@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 import numpy as np
 import os
 import io
@@ -36,6 +37,9 @@ class SummaryStage(Stage):
         tf.summary.scalar('cost', net.train_cost)
         tf.summary.scalar('val_acc', net.val_acc)
         tf.summary.scalar('val_cost', net.val_cost)
+        # make histogram
+        tf.contrib.layers.summarize_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+
         self.net = net
 
         arg = tf.argmax(self.net.train_pred, 2)
