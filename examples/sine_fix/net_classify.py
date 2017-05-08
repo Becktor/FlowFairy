@@ -24,8 +24,9 @@ def expand(l, emb, embedding_size):
 # Create model
 def conv_net(x, cls, weights, biases, dropout):
     xs = tf.reshape(x, shape = [-1, sr, 1, 1] )
+    wc1, wc2, wc3, wc4, wc5, wout = weights
+
     #convblock 1
-    wc1 = weights[0]
     with tf.variable_scope(wc1['name']):
         conv1 = conv2d(xs, wc1['shape'])
         pool1 = maxpool2d(conv1, k=2)
@@ -53,14 +54,12 @@ def conv_net(x, cls, weights, biases, dropout):
         expanded = tf.concat([pool1, expanded], axis=3)
 
     #convblock 2
-    wc2 = weights[1]
     with tf.variable_scope(wc2['name']):
         conv2 = conv2d(expanded, wc2['shape'])
         pool2 = maxpool2d(conv2, k=2)
     print('conv2: ', pool2)
 
     #convblock 3
-    wc3 = weights[2]
     with tf.variable_scope(wc3['name']):
         conv3 = conv2d(pool2, wc3['shape'])
     print('conv3: ', conv3)
@@ -70,7 +69,6 @@ def conv_net(x, cls, weights, biases, dropout):
     c1shape = conv1.get_shape().as_list()
     conv4 = tf.reshape(conv4, shape=[c1shape[0], sr, 1, -1]) # reshape upconvolution to have proper shape
 
-    wc4 = weights[3]
     with tf.variable_scope(wc4['name']):
         conv4 = conv2d(conv4, wc4['shape'])
     print('conv4: ', conv4)
@@ -78,14 +76,13 @@ def conv_net(x, cls, weights, biases, dropout):
     #convblock 5
     conv5 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
 
-    wc5 = weights[4]
     with tf.variable_scope(wc5['name']):
         conv5 = conv2d(conv5, wc5['shape'])
     print('conv5: ', conv5)
 
-    wout = weights[5]
     #out
     out = tf.reshape(conv5, [-1, wout['shape'][0], 256])
+    print('out: ', out)
     return out, embed
 
 class Net:
