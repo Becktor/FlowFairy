@@ -10,17 +10,6 @@ chunk = settings.CHUNK
 frequency_count = settings.CLASS_COUNT
 frq_min, frq_max = settings.FREQUENCY_LIMIT
 step = (frq_max - frq_min) / frequency_count
-sine_count = settings.SINE_COUNT
-
-class FrequencyGen(Feature):
-
-    def feature(self):
-        frqs = np.random.randint(340, 720)
-        return {'frequency': frqs}
-
-    class Meta:
-        ignored_fields = ('frequency',)
-
 
 def classify(val):
     val = (val-np.min(val))/(np.max(val)-np.min(val))
@@ -28,19 +17,21 @@ def classify(val):
 
 class SineGen(Feature):
     arr = np.arange(samplerate, dtype=np.float32) * 2 * np.pi
-    frqs = np.arange(frq_min, frq_max, step) / samplerate
     choices = np.arange(frequency_count)
 
-    def feature(self, **kwargs):
-        choice = np.random.choice(self.choices, size=(2,1), replace=False)
+    def feature(self, initial, **kwargs):
+        frq1, frq2 = initial
 
         sines = np.tile(self.arr, (2,1))
-        chosen_frqs = self.frqs[choice]
 
-        y = np.sin(sines * chosen_frqs).astype('float32')
+        y = np.sin(sines * np.array([[ frq1[1] ], [frq2[1]]])).astype('float32')
         y = y.sum(axis=0)
 
         return {'y': y}
+
+    class Meta:
+        ignored_fields = ('initial',)
+
 
 class NoisySineGen(Feature):
 
@@ -54,7 +45,7 @@ class NoisySineGen(Feature):
 class ConvertToClasses(Feature):
 
     def feature(self, x, y, **kwargs):
-        return {'x':classify(x), 'y':classify(y)}
+        return {'x':classify(x), 'y':classify(y).astype('int64')}
 
 class Mask(Feature):
 
