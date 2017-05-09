@@ -2,16 +2,18 @@ import random
 
 class DataLoader:
 
-    def __init__(self, name, data):
+    def __init__(self, name):
         self.name = name
-        self.data = data
+        self._data = []
+
+    def add_data(self, data):
+        self._data.append(data)
 
     def _iter_data(self):
         while True:
-            random.shuffle(self.data)
-            for d in self.data:
-                yield {'initial': d}
+            yield {d.name: next(d) for d in self._data}
 
     def __iter__(self):
         return self._iter_data()
+
 

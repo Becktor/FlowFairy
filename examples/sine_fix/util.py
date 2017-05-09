@@ -1,11 +1,9 @@
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 
-def embedding(l, cls, embedding_size, num_classes):
+def embedding(cls, embedding_size, num_classes):
 
-    if embedding_size > 1:
-        shape = [num_classes]
-    else:
-        shape = [num_classes, embedding_size]
+    shape = [num_classes, embedding_size]
 
     W = tf.get_variable('embedding', shape, initializer=tf.truncated_normal_initializer())
     emb = tf.nn.embedding_lookup(W, cls)
@@ -45,3 +43,8 @@ def avgpool2d(x, k=2):
     # MaxPool2D wrapper
     return tf.nn.avg_pool(x, ksize=[1, k, k, 1], strides=[1, k, k, 1],
                           padding='SAME')
+
+def GLU(x, num_filters, kernel_size, scope='glu'):
+    A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit')
+    B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate')
+    return A * tf.sigmoid(B)

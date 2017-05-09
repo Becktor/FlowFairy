@@ -15,7 +15,7 @@ from flowfairy.conf import settings
 def get_log_dir():
     return os.path.join(settings.LOG_DIR, settings.LOGNAME)
 
-@register(100)
+@register(250)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
         self.figure.canvas.draw()
@@ -33,7 +33,7 @@ class SummaryStage(Stage):
         tf.summary.scalar('train_cost', net.train_cost)
         tf.summary.scalar('val_acc', net.val_acc)
         tf.summary.scalar('val_cost', net.val_cost)
-
+        tf.contrib.layers.summarize_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
         self.net = net
 
         self.reset_fig()

@@ -12,17 +12,30 @@ frq_min, frq_max = settings.FREQUENCY_LIMIT
 step = (frq_max - frq_min) / frequency_count
 
 frqs = list(enumerate(np.arange(frq_min, frq_max, step)))
-frqs2 = list(frqs)
-random.shuffle(frqs2)
-frqs3 = list(frqs)
-random.shuffle(frqs3)
-frqs4 = list(frqs)
-random.shuffle(frqs4)
-frqs5 = list(frqs)
-random.shuffle(frqs5)
+blnds = list(frqs)
+random.shuffle(blnds)
+
+val_cut = int(frequency_count * 0.75)
 
 def frequencies():
-    return it.chain(zip(frqs, frqs2), zip(frqs, frqs3), zip(frqs, frqs4), zip(frqs, frqs5))
+    while True:
+        random.shuffle(frqs)
+        yield from frqs
 
+def blends_train():
+    blends = list(blnds[:val_cut])
+    while True:
+        random.shuffle(blends)
+        yield from blends
 
-data.register(frequencies, ('train', 0.75), ('validation', 0.25))
+def blends_val():
+    blends = list(blnds[val_cut:])
+    while True:
+        random.shuffle(blends)
+        yield from blends
+
+data.register(frequencies, 'train')
+data.register(frequencies, 'validation')
+
+data.register(blends_train, 'train', name='blends')
+data.register(blends_val, 'validation', name='blends')
