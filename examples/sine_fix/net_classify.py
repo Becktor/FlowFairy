@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from flowfairy.conf import settings
-from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d, GLU
+from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d, GTU
 
 discrete_class = settings.DISCRETE_CLASS
 batch_size = settings.BATCH_SIZE
@@ -23,7 +23,7 @@ def broadcast(l, emb):
 def conv_net(x, cls, dropout):
     xs = tf.reshape(x, shape = [batch_size, sr, 1, 1] )
 
-    conv1 = GLU(xs, 4, [256, 1], scope='conv1')
+    conv1 = GTU(xs, 4, [256, 1], scope='conv1')
     pool1 = slim.max_pool2d(conv1, [2,1])
     print('conv1: ', pool1)
 
@@ -34,12 +34,12 @@ def conv_net(x, cls, dropout):
         print('embedded:', embedded)
 
     #convblock 2
-    conv2 = GLU(embedded, 16, [128, 1], scope='conv2')
+    conv2 = GTU(embedded, 16, [128, 1], scope='conv2')
     pool2 = slim.max_pool2d(conv2, [2,1])
     print('conv2: ', pool2)
 
     #convblock 3
-    conv3 = GLU(pool2, 16, [128, 1], scope='conv3')
+    conv3 = GTU(pool2, 16, [128, 1], scope='conv3')
     print('conv3: ', conv3)
 
     #convblock 4
@@ -47,13 +47,13 @@ def conv_net(x, cls, dropout):
     print('d2sp: ', conv4)
     conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 4]) # reshape upconvolution to have proper shape
 
-    conv4 = GLU(conv4, 16, [128, 1], scope='conv4')
+    conv4 = GTU(conv4, 16, [128, 1], scope='conv4')
     print('conv4: ', conv4)
 
     #convblock 5
     conv5 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
 
-    conv5 = GLU(conv5, 256, [1,1], scope='conv5')
+    conv5 = slim.conv2d(conv5, 256, [1,1], scope='conv5')
     print('conv5: ', conv5)
 
     #out

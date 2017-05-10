@@ -48,3 +48,8 @@ def GLU(x, num_filters, kernel_size, scope='glu'):
     A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit')
     B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate')
     return A * tf.sigmoid(B)
+
+def GTU(x, num_filters, kernel_size, scope='gtu'):
+    A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit')
+    B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate')
+    return tf.tanh(A) * tf.sigmoid(B)
