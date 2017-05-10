@@ -69,8 +69,8 @@ class SummaryStage(Stage):
         res, x, y, c = sess.run([pred, x,  y, chunk])
         res = np.argmax(res, 2)
 
-        start = c[0] - settings.CHUNK * 2
-        end = start + settings.CHUNK * 5
+        start = c[0] - settings.CHUNK
+        end = start + settings.CHUNK *3
 
         plt.subplot('111').plot(res[0,start:end],'r')
         plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)

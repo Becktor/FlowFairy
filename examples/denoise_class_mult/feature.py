@@ -19,8 +19,8 @@ class SineGen(Feature):
     arr = np.arange(samplerate, dtype=np.float32) * 2 * np.pi
     choices = np.arange(frequency_count)
 
-    def feature(self, initial, **kwargs):
-        frq1, frq2 = initial
+    def feature(self, frequencies, blends, **kwargs):
+        frq1, frq2 = frequencies, blends
 
         sines = np.tile(self.arr, (2,1))
 
@@ -30,7 +30,7 @@ class SineGen(Feature):
         return {'y': y}
 
     class Meta:
-        ignored_fields = ('initial',)
+        ignored_fields = ('frequencies','blends')
 
 
 class NoisySineGen(Feature):
