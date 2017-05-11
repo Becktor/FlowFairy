@@ -20,11 +20,12 @@ def broadcast(l, emb):
 
 
 # Create model
-def conv_net(x, cls, dropout):
+def conv_net(x, cls, dropout, is_training=False):
     xs = tf.reshape(x, shape = [batch_size, sr, 1, 1] )
 
     conv1 = causal_GLU(xs, 4, [256, 1], scope='conv1', normalizer_fn=slim.batch_norm)
     pool1 = slim.max_pool2d(conv1, [2,1])
+    pool1 = slim.dropout(pool1, is_training=is_training)
     print('conv1: ', pool1)
 
     with tf.name_scope('embedding'):
@@ -40,6 +41,7 @@ def conv_net(x, cls, dropout):
 
     #convblock 3
     conv3 = GLU(pool2, 16, [128, 1], scope='conv3')
+    conv3 = slim.dropout(conv3, is_training=is_training)
     print('conv3: ', conv3)
 
     #convblock 4
@@ -54,6 +56,7 @@ def conv_net(x, cls, dropout):
     conv5 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
 
     conv5 = GLU(conv5, 256, [1,1], scope='conv5')
+    conv5 = slim.dropout(conv5, is_training=is_training)
     print('conv5: ', conv5)
 
     #out
@@ -68,8 +71,8 @@ class Net:
         pass
 
 
-    def feedforward(self, x, y, frqid, keep_prob, cls):
-        pred = conv_net(x, frqid, keep_prob)
+    def feedforward(self, x, y, frqid, keep_prob, cls, is_training=False):
+        pred = conv_net(x, frqid, keep_prob, is_training)
 
         target_output = tf.reshape(y,[-1])
         prediction = tf.reshape(pred,[-1, discrete_class])
@@ -90,7 +93,7 @@ class Net:
         self.train_x = kwargs['x']
         self.train_y = kwargs['y']
 
-        self.train_pred, self.train_cost, self.train_acc = self.feedforward(**kwargs)
+        self.train_pred, self.train_cost, self.train_acc = self.feedforward(is_training=True, **kwargs)
         optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         gradients, variables = zip(*optimizer.compute_gradients(self.train_cost))
         gradients, _ = tf.clip_by_global_norm(gradients, 5.0)
