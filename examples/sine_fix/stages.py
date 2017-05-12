@@ -92,10 +92,10 @@ class TrainingStage(Stage):
         sess.run(self.optimizer)
 
 
-@register(10000)
+@register(1000)
 class SavingStage(Stage):
     def before(self, sess, net):
         self.saver = tf.train.Saver()
 
     def run(self, sess, i):
-        self.saver.save(sess, get_log_dir(), global_step=i)
+        self.saver.save(sess, get_log_dir()+'.ckpt', global_step=i)

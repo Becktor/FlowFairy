@@ -25,7 +25,6 @@ def conv_net(x, cls, dropout, is_training=False):
 
     conv1 = causal_GLU(xs, 4, [256, 1], scope='conv1', normalizer_fn=slim.batch_norm)
     pool1 = slim.max_pool2d(conv1, [2,1])
-    pool1 = slim.dropout(pool1, is_training=is_training)
     print('conv1: ', pool1)
 
     with tf.name_scope('embedding'):
@@ -36,12 +35,12 @@ def conv_net(x, cls, dropout, is_training=False):
 
     #convblock 2
     conv2 = GLU(embedded, 16, [128, 1], scope='conv2')
+    conv2 = slim.dropout(conv2, is_training=is_training)
     pool2 = slim.max_pool2d(conv2, [2,1])
     print('conv2: ', pool2)
 
     #convblock 3
     conv3 = GLU(pool2, 16, [128, 1], scope='conv3')
-    conv3 = slim.dropout(conv3, is_training=is_training)
     print('conv3: ', conv3)
 
     #convblock 4
@@ -56,7 +55,6 @@ def conv_net(x, cls, dropout, is_training=False):
     conv5 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
 
     conv5 = GLU(conv5, 256, [1,1], scope='conv5')
-    conv5 = slim.dropout(conv5, is_training=is_training)
     print('conv5: ', conv5)
 
     #out
