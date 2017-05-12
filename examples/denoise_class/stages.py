@@ -43,6 +43,7 @@ class SummaryStage(Stage):
         self.net = net
 
         arg = tf.argmax(self.net.train_pred, 2)
+        tf.summary.audio('input',norm(tf.cast(self.net.train_x, tf.float32)), settings.SAMPLERATE)
         tf.summary.audio('target', norm(tf.cast(self.net.train_y, tf.float32)), settings.SAMPLERATE)
         tf.summary.audio('pred', norm(tf.cast(arg, tf.float32)), settings.SAMPLERATE)
 
@@ -68,9 +69,8 @@ class SummaryStage(Stage):
         res, x, y, c = sess.run([pred, x,  y, chunk])
         res = np.argmax(res, 2)
 
-        start = c[0] - settings.CHUNK
-        end = start + settings.CHUNK * 3
-
+        start = c[0] - settings.CHUNK * 2
+        end = start + settings.CHUNK * 5
         plt.subplot('111').plot(res[0,start:end],'r')
         plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)
         plt.subplot('111').plot(x[0,start:end],'g', alpha=0.5)
