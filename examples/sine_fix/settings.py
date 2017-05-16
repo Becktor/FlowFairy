@@ -7,7 +7,7 @@ NET = 'net_classify'
 FEATURES = [
     'feature.SineGen',
     'feature.NoisySineGen',
-    'feature.Dropout',
+    #'feature.Dropout',
     'feature.ConvertToClasses'
     #'feature.Mask'
 ]
@@ -19,14 +19,14 @@ LEARNING_RATE = 0.001
 CLASS_COUNT = 200
 FREQUENCY_LIMIT = (120, 720)
 EMBEDDING_SIZE = 1
-EMBEDDING_INPUT_SIZE = 1
+EMBEDDING_INPUT_SIZE = 2
 DISCRETE_CLASS = 256
 
 
 BATCH_SIZE = 64
 QUEUE_CAPACITY = 8 * BATCH_SIZE
 
-CUDA_VISIBLE_DEVICES = 0
+CUDA_VISIBLE_DEVICES = 3
 
 LOG_INTERVAL = 100//BATCH_SIZE
 

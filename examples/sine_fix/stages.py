@@ -5,6 +5,7 @@ import io
 from datetime import datetime
 import matplotlib
 matplotlib.use('Agg')
+from feature import classify
 
 import matplotlib.pyplot as plt
 
@@ -56,6 +57,7 @@ class SummaryStage(Stage):
         self.reset_fig()
 
         res, x, y = sess.run([ pred, x, y ])
+        x = classify(x)
         res = np.argmax(res, 2)
 
         start = np.random.randint(500)
@@ -98,4 +100,4 @@ class SavingStage(Stage):
         self.saver = tf.train.Saver()
 
     def run(self, sess, i):
-        self.saver.save(sess, get_log_dir()+'.ckpt', global_step=i)
+        self.saver.save(sess, get_log_dir()+'.ckpt', global_step=i, latest_filename=settings.LOGNAME+'.checkpoint')

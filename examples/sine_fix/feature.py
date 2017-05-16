@@ -26,7 +26,7 @@ class SineGen(Feature):
         y = x[0]
         x = x.sum(axis=0)
 
-        return {'cls': y, 'y': y, 'x': x, 'frqid': np.array(frq1[0], dtype=np.int32)}
+        return {'y': y, 'x': x, 'frqid': np.array(frq1[0], dtype=np.int32)}
 
     class Meta:
         ignored_fields = ('frequencies', 'blends')
@@ -54,4 +54,4 @@ class Dropout(Feature):
 class ConvertToClasses(Feature):
 
     def feature(self, x, y, **kwargs):
-        return {'x': classify(x), 'y': classify(y).astype('int64')}
+        return {'y': classify(y).astype('int64')}
