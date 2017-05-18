@@ -21,8 +21,8 @@ def run(*args, **options):
     net = load_net()
 
     queues = []
-    with tf.variable_scope('network') as scope:
-        for data_loader in data.provider:
+    for data_loader in data.provider:
+        with tf.variable_scope(data_loader.name) as scope:
             fts = FeatureManager(data_loader)
             queue = FlowQueue(fts, coord)
             queues.append(queue)
