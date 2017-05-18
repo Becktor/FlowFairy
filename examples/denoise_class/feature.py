@@ -13,17 +13,17 @@ def classify(val):
     return np.floor(val*255)
 
 class SineGen(Feature):
-    arr = np.arange(samplerate, dtype=np.float32) * 2 * np.pi
+    arr = np.arange(samplerate, dtype=np.float32) * 2 * np.pi / samplerate
 
-    def feature(self, initial, **kwargs):
-        frequency = initial
-        return {'y':np.sin(self.arr * (frequency)/samplerate)}
+    def feature(self, frequencies, **kwargs):
+        frq = frequencies
 
-    def fields(self):
-        return ('y',)
+        y = np.sin(self.arr * frq[1]).astype('float32')
+        return {'y': y}
 
     class Meta:
-        ignored_fields=('initial',)
+        ignored_fields = ('frequencies','blends')
+
 
 class NoisySineGen(Feature):
 

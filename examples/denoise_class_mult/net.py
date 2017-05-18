@@ -1,6 +1,7 @@
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 from flowfairy.conf import settings
-from util import lrelu, conv2d, maxpool2d
+from util import lrelu, conv2d, maxpool2d, GLU, causal_GLU
 
 batch_size = settings.BATCH_SIZE
 samplerate = sr = settings.SAMPLERATE
@@ -8,90 +9,79 @@ dropout = settings.DROPOUT
 learning_rate = settings.LEARNING_RATE
 discrete_class = settings.DISCRETE_CLASS
 
-def conv_net(x, weights, biases, dropout):
+def conv_net(x,  dropout):
     xs = tf.reshape(x, shape = [-1, sr, 1, 1] )
     #convblock 1
-    conv1 = conv2d(xs, weights['wc1'], biases['bc1'])
-    pool1 = maxpool2d(conv1, k=2)
+    conv1 = causal_GLU(xs, 4, [128, 1], scope='conv1', normalizer_fn=slim.batch_norm)
+    pool1 = slim.max_pool2d(conv1, [2, 1])
     print('conv1: ', pool1)
 
     #convblock 2
-    conv2 = conv2d(pool1, weights['wc2'], biases['bc2'])
-    pool2 = maxpool2d(conv2, k=2)
+    conv2 = GLU(pool1, 16, [64, 1], scope='conv2')
+    pool2 = slim.max_pool2d(conv2, [2, 1])
     print('conv2: ', pool2)
 
     #convblock 3
-    conv3 = conv2d(pool2, weights['wc3'], biases['bc3'])
+    conv3 = GLU(pool2, 16, [64, 1], scope='conv3')
     print('conv3: ', conv3)
 
     #convblock 4
-    conv4 = tf.depth_to_space(conv3, 2) #upconv
-    conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 1]) # reshape upconvolution to have proper shape
-    conv4 = conv2d(conv4, weights['wc4'], biases['bc4'])
+    conv4 = tf.depth_to_space(conv3, 4) #upconv
+    print('d2sp: ', conv4)
+    conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 4]) # reshape upconvolution to have proper shape
+
+    conv4 = GLU(conv4, 16, [64, 1], scope='conv4')
     print('conv4: ', conv4)
 
     #convblock 5
     conv5 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
-    conv5 = conv2d(conv4, weights['wc5'], biases['bc5'])
+
+    conv5 = GLU(conv5, 256, [1,1], scope='conv5')
     print('conv5: ', conv5)
+
     #out
-    out = tf.reshape(conv5, [-1, weights['out'].get_shape().as_list()[0], 256])
+    out = tf.reshape(conv5, [-1, sr, 256])
     print('out: ', out)
     return out
 
+
 class Net:
 
-    def init(self, x, y, m, chunk, keep_prob):
+    def __init__(self):
         # Store layers weight & bias
+        pass
 
-        weights = {
-            'wc1': tf.Variable(tf.truncated_normal([128, 1, 1, 4])),
-            'wc2': tf.Variable(tf.truncated_normal([64, 1, 4, 16])),
-            'wc3': tf.Variable(tf.truncated_normal([64, 1, 16, 4])),
-            'wc4': tf.Variable(tf.truncated_normal([64, 1, 1, 8])),
-            'wc5': tf.Variable(tf.truncated_normal([1, 1, 8, 256])),
-            'out': tf.Variable(tf.truncated_normal([sr, 256]))
-        }
+    def feedforward(self, x, y, chunk, keep_prob):
+        pred = conv_net(x, dropout)
 
-        biases = {
-            'bc1': tf.Variable(tf.truncated_normal([4])),
-            'bc2': tf.Variable(tf.truncated_normal([16])),
-            'bc3': tf.Variable(tf.truncated_normal([4])),
-            'bc4': tf.Variable(tf.truncated_normal([8])),
-            'bc5': tf.Variable(tf.truncated_normal([256])),
-            'out': tf.Variable(tf.truncated_normal([sr]))
-        }
-
-        self.x = x
-        self.y = tf.cast(y, tf.int64)
-        self.chunk = chunk
-
-        # Construct model
-        pred = conv_net(self.x, weights, biases, keep_prob)
-        self.pred = pred
-
-        # Define loss and optimizer
-        # Construct model and define variables
-        pred = conv_net(self.x, weights, biases, keep_prob)
-
-        target_output = tf.reshape(self.y,[-1])
+        target_output = tf.reshape(y,[-1])
         prediction = tf.reshape(pred,[-1, discrete_class])
 
         # Define loss and optimizer
         with tf.name_scope('cost'):
-            self.sparse = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = prediction,
+            sparse = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = prediction,
                                                                     labels = target_output)
-            self.cost = tf.reduce_mean(self.sparse)
+            cost = tf.reduce_mean(sparse)
 
-        #Optimizer
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.cost)
-
-        # Evaluate model
-        correct_pred = tf.equal(tf.argmax(pred, 2), self.y)
+        correct_pred = tf.equal(tf.argmax(pred, 2), y)
         with tf.name_scope('accuracy'):
-            self.accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+            accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
-        self.loss = self.cost
+        return pred, cost, accuracy, chunk
+
+    def train(self, **kwargs):
+        self.train_x = kwargs['x']
+        self.train_y = kwargs['y']
+
+        self.train_pred, self.train_cost, self.train_acc, self.train_chunk = self.feedforward(**kwargs)
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.train_cost)
+
+
+    def validation(self, **kwargs):
+        self.val_x = kwargs['x']
+        self.val_y = kwargs['y']
+
+        self.val_pred, self.val_cost, self.val_acc, self.val_chunk = self.feedforward(**kwargs)
 
 
     def begin(self, session):

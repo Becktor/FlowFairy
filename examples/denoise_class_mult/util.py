@@ -1,15 +1,26 @@
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 
+def embedding(cls, embedding_size, num_classes):
+
+    shape = [num_classes, embedding_size]
+
+    W = tf.get_variable('embedding', shape, initializer=tf.truncated_normal_initializer())
+    emb = tf.nn.embedding_lookup(W, cls)
+
+    return emb
 
 # Create some wrappers for simplicity
 def lrelu(x, leak=0.2, name="lrelu"):
-     with tf.variable_scope(name):
-         f1 = 0.5 * (1 + leak)
-         f2 = 0.5 * (1 - leak)
-         return f1 * x + f2 * abs(x)
+    with tf.name_scope(name):
+        f1 = 0.5 * (1 + leak)
+        f2 = 0.5 * (1 - leak)
+        return f1 * x + f2 * abs(x)
 
-def conv2d(x, W, b, strides=1):
+def conv2d(x, kernel_shape, strides=1):
     # Conv2D wrapper, with bias and relu activation
+    W = tf.get_variable('weights', kernel_shape, initializer=tf.truncated_normal_initializer())
+    b = tf.get_variable('bias', [kernel_shape[-1]], initializer=tf.truncated_normal_initializer())
     x = tf.nn.conv2d(x, W, strides=[1, strides, 1, 1], padding='SAME')
     x = tf.nn.bias_add(x, b)
     return lrelu(x)
@@ -28,26 +39,28 @@ def maxpool2d(x, k=2):
                           padding='SAME')
 
 
-# Create model
-def conv_net(x, weights, biases, dropout):
-    xs = tf.reshape(x, shape=[-1, sr, 1, 1])
-    # Convolution Layer
-    conv1 = conv2d(xs, weights['wc1'], biases['bc1'])
-    conv1 = maxpool2d(conv1, k=2)
-    print('conv1: ', conv1)
-    conv2 = conv2d(conv1, weights['wc2'], biases['bc2'])
-    conv2 = maxpool2d(conv2, k=2)
-    print('conv2: ', conv2)
-    #conv3 = SubpixelConv2d(x, scale=2, n_out_channel=2, name='subpixel_conv2d2')
-    conv3 = conv2d(conv2, weights['wc3'], biases['bc3'])
+def avgpool2d(x, k=2):
+    # MaxPool2D wrapper
+    return tf.nn.avg_pool(x, ksize=[1, k, k, 1], strides=[1, k, k, 1],
+                          padding='SAME')
 
-    print('conv3: ', conv3)
-    #conv4 = PS(conv3, 2)
-    conv4 = tf.depth_to_space(conv3, 2)
-    print('conv4: ', conv4)
-    #out=
-    out = tf.reshape(conv3, [-1, weights['out'].get_shape().as_list()[0]])
-    print(out)
-    #out = tf.add(tf.matmul(out, weights['out']), biases['out'])
-    #print(out)
-    return out , conv1, conv2, conv3
+def GLU(x, num_filters, kernel_size, scope='glu', **kwargs):
+    A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
+    B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
+    return A * tf.sigmoid(B)
+
+def GTU(x, num_filters, kernel_size, scope='gtu', **kwargs):
+    A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
+    B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
+    return tf.tanh(A) * tf.sigmoid(B)
+
+def causal_conv(conv):
+    def causal(x, num_filters, kernel_size, scope='causal', **kwargs):
+        width = kernel_size[0]//2
+        pad_size = x.get_shape().as_list()
+        pad_size[1] = width
+        x = tf.concat([tf.zeros(pad_size), x], axis=1)[:,:-width]
+        return conv(x, num_filters, kernel_size, scope, **kwargs)
+    return causal
+
+causal_GLU = causal_conv(GLU)

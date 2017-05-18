@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 import numpy as np
 import os
 import io
@@ -18,7 +19,7 @@ def get_log_dir():
 def norm(tensor):
     return tf.div((tensor - tf.reduce_min(tensor)), (tf.reduce_max(tensor) - tf.reduce_min(tensor)))
 
-@register(100)
+@register(250)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
         self.figure.canvas.draw()
@@ -32,38 +33,44 @@ class SummaryStage(Stage):
         self.figure.clf()
 
     def before(self, sess, net):
-        tf.summary.scalar('acc', net.accuracy)
-        tf.summary.scalar('cost', net.cost)
+        tf.summary.scalar('acc', net.train_acc)
+        tf.summary.scalar('cost', net.train_cost)
+        tf.summary.scalar('val_acc', net.val_acc)
+        tf.summary.scalar('val_cost', net.val_cost)
+        # make histogram
+        tf.contrib.layers.summarize_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 
-        self.pred = net.pred
-        self.x = net.x
-        self.y = net.y
-        self.chunk = net.chunk
+        self.net = net
 
-        arg = tf.argmax(self.pred, 2)
-        tf.summary.audio('x', norm(tf.cast(self.y, tf.float32)), settings.SAMPLERATE)
-        tf.summary.audio('pred',norm(tf.cast(arg, tf.float32)), settings.SAMPLERATE)
+        arg = tf.argmax(self.net.train_pred, 2)
+        tf.summary.audio('input',norm(tf.cast(self.net.train_x, tf.float32)), settings.SAMPLERATE)
+        tf.summary.audio('target', norm(tf.cast(self.net.train_y, tf.float32)), settings.SAMPLERATE)
+        tf.summary.audio('pred', norm(tf.cast(arg, tf.float32)), settings.SAMPLERATE)
 
         self.reset_fig()
         img = self.fig2rgb_array()
 
-        self.image_in = tf.placeholder(np.uint8, shape=img.shape)
-        self.image = tf.Variable(np.zeros(img.shape, dtype=np.uint8), trainable=False, name='graph_image')
-        self.image_assign = self.image.assign(self.image_in)
+        self.train_image_in = tf.placeholder(np.uint8, shape=img.shape)
+        self.train_image = tf.Variable(np.zeros(img.shape, dtype=np.uint8), trainable=False, name='train_graph_image')
+        self.train_image_assign = self.train_image.assign(self.train_image_in)
+        tf.summary.image('train_graph', self.train_image)
 
-        tf.summary.image('graph', self.image)
+        self.val_image_in = tf.placeholder(np.uint8, shape=img.shape)
+        self.val_image = tf.Variable(np.zeros(img.shape, dtype=np.uint8), trainable=False, name='val_graph_image')
+        self.val_image_assign = self.val_image.assign(self.val_image_in)
+        tf.summary.image('val_graph', self.val_image)
 
         self.merged = tf.summary.merge_all()
         self.writer = tf.summary.FileWriter(get_log_dir(), sess.graph)
 
-    def plot(self, sess):
+    def plot(self, sess, pred, x, y, chunk):
         self.reset_fig()
 
-        res, x, y, c= sess.run([ self.pred, self.x, self.y, self.chunk])
+        res, x, y, c = sess.run([pred, x,  y, chunk])
         res = np.argmax(res, 2)
 
         start = c[0] - settings.CHUNK
-        end = start+settings.CHUNK*3
+        end = start + settings.CHUNK *3
 
         plt.subplot('111').plot(res[0,start:end],'r')
         plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)
@@ -72,8 +79,11 @@ class SummaryStage(Stage):
 
 
     def draw_img(self, sess):
-        self.plot(sess)
-        sess.run(self.image_assign, feed_dict={self.image_in: self.fig2rgb_array()})
+        self.plot(sess, self.net.train_pred, self.net.train_x, self.net.train_y, self.net.train_chunk)
+        sess.run(self.train_image_assign, feed_dict={self.train_image_in: self.fig2rgb_array()})
+
+        self.plot(sess, self.net.val_pred, self.net.val_x, self.net.val_y, self.net.val_chunk)
+        sess.run(self.val_image_assign, feed_dict={self.val_image_in: self.fig2rgb_array()})
 
     def run(self, sess, i):
         self.draw_img(sess)
@@ -81,8 +91,6 @@ class SummaryStage(Stage):
         summary = sess.run(self.merged)
 
         self.writer.add_summary(summary, i)
-
-
 
 @register()
 class TrainingStage(Stage):
@@ -93,4 +101,10 @@ class TrainingStage(Stage):
     def run(self, sess, i):
         sess.run(self.optimizer)
 
+@register(10000)
+class SavingStage(Stage):
+    def before(self, sess, net):
+        self.saver = tf.train.Saver()
 
+    def run(self, sess, i):
+        self.saver.save(sess, get_log_dir(), global_step=i)
