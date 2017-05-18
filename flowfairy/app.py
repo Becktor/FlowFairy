@@ -21,17 +21,18 @@ def run(*args, **options):
     net = load_net()
 
     queues = []
-    for data_loader in data.provider:
-        with tf.variable_scope(data_loader.name) as scope:
-            fts = FeatureManager(data_loader)
-            queue = FlowQueue(fts, coord)
-            queues.append(queue)
+    with tf.variable_scope('network') as scope:
+        for data_loader in data.provider:
+            with tf.name_scope(data_loader.name):
+                fts = FeatureManager(data_loader)
+                queue = FlowQueue(fts, coord)
+                queues.append(queue)
 
-            X = queue.dequeue()
+                X = queue.dequeue()
 
-            func = getattr(net, data_loader.name)
-            func(**dict(zip(fts.fields, X)))
-            scope.reuse_variables()
+                func = getattr(net, data_loader.name)
+                func(**dict(zip(fts.fields, X)))
+                scope.reuse_variables()
 
     with tf.Session() as sess:
 
