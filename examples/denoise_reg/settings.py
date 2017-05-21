@@ -2,7 +2,7 @@ import os
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
-NET = 'sd2s_unet'
+NET = 'nets.bn_d2s_unet'
 
 FEATURES = [
     'feature.SineGen',

@@ -10,6 +10,7 @@ learning_rate = settings.LEARNING_RATE
 discrete_class = settings.DISCRETE_CLASS
 
 def conv_net(x,  dropout):
+
     xs = tf.reshape(x, shape = [-1, sr, 1, 1] )
     #convblock 1
     conv1 = slim.conv2d(xs, 4, [128, 1], activation_fn=lrelu, scope='conv1')
@@ -67,18 +68,20 @@ class Net:
         return pred, cost, accuracy, chunk
 
     def train(self, **kwargs):
-        self.train_x = kwargs['x']
-        self.train_y = kwargs['y']
+        with tf.name_scope('train'):
+            self.train_x = kwargs['x']
+            self.train_y = kwargs['y']
 
-        self.train_pred, self.train_cost, self.train_acc, self.train_chunk = self.feedforward(**kwargs)
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.train_cost)
+            self.train_pred, self.train_cost, self.train_acc, self.train_chunk = self.feedforward(**kwargs)
+            self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.train_cost)
 
 
     def validation(self, **kwargs):
-        self.val_x = kwargs['x']
-        self.val_y = kwargs['y']
+        with tf.name_scope('validation'):
+            self.val_x = kwargs['x']
+            self.val_y = kwargs['y']
 
-        self.val_pred, self.val_cost, self.val_acc, self.val_chunk = self.feedforward(**kwargs)
+            self.val_pred, self.val_cost, self.val_acc, self.val_chunk = self.feedforward(**kwargs)
 
 
     def begin(self, session):
