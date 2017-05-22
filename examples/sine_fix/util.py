@@ -1,11 +1,12 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
+from tensorflow.contrib.layers.python.layers import initializers
 
-def embedding(cls, embedding_size, num_classes):
+def embedding(cls, embedding_size, num_classes, scope=None):
 
     shape = [num_classes, embedding_size]
 
-    W = tf.get_variable('embedding', shape, initializer=tf.truncated_normal_initializer())
+    W = tf.get_variable('embedding', shape, initializer=initializers.xavier_initializer())
     emb = tf.nn.embedding_lookup(W, cls)
 
     return emb

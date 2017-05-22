@@ -2,6 +2,7 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from flowfairy.conf import settings
 from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d, GLU, causal_GLU
+from functools import partial
 
 discrete_class = settings.DISCRETE_CLASS
 batch_size = settings.BATCH_SIZE
@@ -23,7 +24,7 @@ def conv_net(x, cls, dropout, is_training=False):
     xs = tf.expand_dims(x, -1)
     xs = tf.expand_dims(xs, -1)
 
-    conv1 = causal_GLU(xs, 4, [256, 1], scope='conv1_1', normalizer_fn=slim.batch_norm)
+    conv1 = causal_GLU(xs, 4, [256, 1], scope='conv1_1', normalizer_fn=slim.batch_norm, normalizer_params={'is_training': is_training})
     conv1 = GLU(conv1, 4, [256, 1], scope='conv1_2')
     pool1 = slim.max_pool2d(conv1, [2,1])
     print('conv1: ', pool1)
@@ -70,7 +71,7 @@ class Net:
     def __init__(self):
         pass
 
-    def feedforward(self, x, y, frqid, is_training=False):
+    def feedforward(self, x, y, frqid, frqid2, is_training=False):
         pred = conv_net(x, frqid, None, is_training)
 
         target_output = tf.reshape(y,[-1])
@@ -93,16 +94,17 @@ class Net:
         self.train_y = kwargs['y']
 
         self.train_pred, self.train_cost, self.train_acc = self.feedforward(is_training=True, **kwargs)
-        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(self.train_cost)
-        #gradients, variables = zip(*optimizer.compute_gradients(self.train_cost))
-        #gradients, _ = tf.clip_by_global_norm(gradients, 5.0)
-        #self.optimizer = optimizer.apply_gradients(zip(gradients, variables))
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        gradients, variables = zip(*optimizer.compute_gradients(self.train_cost))
+        gradients, _ = tf.clip_by_global_norm(gradients, 5.0)
+        self.optimizer = optimizer.apply_gradients(zip(gradients, variables))
 
     def validation(self, **kwargs):
         self.val_x = kwargs['x']
         self.val_y = kwargs['y']
 
         self.val_pred, self.val_cost, self.val_acc = self.feedforward(**kwargs)
+        self.val_pred = tf.Print(self.val_pred, [kwargs['frqid'], kwargs['frqid2']], message='frqids: ')
 
     def begin(self, session):
         #session.run(self.init)

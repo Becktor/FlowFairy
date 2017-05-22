@@ -9,6 +9,7 @@ duration = settings.DURATION
 frequency_count = settings.CLASS_COUNT
 frq_min, frq_max = settings.FREQUENCY_LIMIT
 step = (frq_max - frq_min) / frequency_count
+max_amp = settings.MAX_AMP
 
 def classify(val):
     val = (val-np.min(val))/(np.max(val)-np.min(val))
@@ -20,13 +21,15 @@ class SineGen(Feature):
     def feature(self, frequencies, blends, **kwargs):
         frq1, frq2 = frequencies, blends
 
-        sines = np.tile(self.arr, (2,1))
+        amp = np.random.rand(2,1) * max_amp
+        phase = np.random.rand(2,1) * np.pi * 2
+        sines = np.tile(self.arr, (2,1)) * amp
 
-        x = np.sin(sines * np.array([[ frq1[1] ], [frq2[1]]])).astype('float32')
+        x = (np.sin(sines * np.array([[ frq1[1] ], [frq2[1]]]) + phase) * amp).astype('float32')
         y = x[0]
         x = x.sum(axis=0)
 
-        return {'y': y, 'x': x, 'frqid': np.array(frq1[0], dtype=np.int32)}
+        return {'y': y, 'x': x, 'frqid': np.array(frq1[0], dtype=np.int32), 'frqid2': np.array(frq2[0])}
 
     class Meta:
         ignored_fields = ('frequencies', 'blends')
