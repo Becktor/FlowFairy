@@ -12,40 +12,32 @@ discrete_class = settings.DISCRETE_CLASS
 def conv_net(x,  dropout):
     xs = tf.reshape(x, shape = [-1, sr, 1, 1] )
     #convblock 1
-    conv1 = slim.conv2d(xs, 4, [256, 1], activation_fn=lrelu,
-                        normalizer_fn=slim.batch_norm, scope='conv1')
+    conv1 = slim.conv2d(xs, 4, [128, 1], activation_fn=lrelu, scope='conv1')
     print('conv1: ', conv1)
     pool1 = slim.max_pool2d(conv1, [2, 1], scope='pool1')
     print('pool1: ', pool1)
-
     #convblock 2
-    conv2 = slim.conv2d(pool1, 16, [128, 1], activation_fn=lrelu,
-                        normalizer_fn=slim.batch_norm, scope='conv2')
+    conv2 = slim.conv2d(pool1, 16, [64, 1], activation_fn=lrelu, scope='conv2')
     print('conv2: ', conv2)
     pool2 = slim.max_pool2d(conv2, [2, 1], scope='pool2')
     print('pool2: ', pool2)
-
-    #convblock 3
-    conv3 = slim.conv2d(pool2, 16, [128, 1], activation_fn=lrelu,
-                        normalizer_fn=slim.batch_norm, scope='conv3')
+    #convblock3
+    conv3 = slim.conv2d(pool2, 32, [64, 1], activation_fn=lrelu, scope='conv3')
     print('conv3: ', conv3)
-
-    #convblock 4
-    d2s4 = tf.depth_to_space(conv3, 4) #upconv
-    print('depth2space: ', d2s4)
-    # reshape upconvolution to have proper shape
-    conv4 = tf.reshape(d2s4, shape=[-1, sr, 1, 4])
-    conv4 = slim.conv2d(conv4, 16, [128, 1], activation_fn=lrelu,
-                        normalizer_fn=slim.batch_norm, scope='conv4')
+    #upconvolution
+    with tf.name_scope('d2s'):
+        upconv = tf.depth_to_space(conv3, 4) #upconv
+        upconv = tf.reshape(upconv, shape=[-1, sr, 1, 8])
+    print('upconv: ', upconv)
+    with tf.name_scope('concat'):
+        concat = tf.concat([upconv, conv1], 3)
+    print('concat: ', concat)
+    #convblock 3
+    conv4 = slim.conv2d(concat, 1, [64, 1], activation_fn=lrelu, scope='conv4')
     print('conv4: ', conv4)
-
-    #convblock 5
-    conv5 = tf.concat([conv4, conv1], 3) # <- unet concat conv1 with conv4 16+4
-    print('concat: ', conv5)
-    conv5 = slim.conv2d(conv5, 256, [1, 1], activation_fn=lrelu, scope='conv5')
-    print('conv5: ', conv5)
     #out
-    out = tf.reshape(conv5, [-1, sr, 256])
+    with tf.name_scope('output'):
+        out = tf.reshape(conv4, [-1, sr])
     print('out: ', out)
     return out
 
@@ -58,18 +50,14 @@ class Net:
     def feedforward(self, x, y, chunk, keep_prob):
         pred = conv_net(x, dropout)
 
-        target_output = tf.reshape(y,[-1])
-        prediction = tf.reshape(pred,[-1, discrete_class])
-
-        # Define loss and optimizer
         with tf.name_scope('cost'):
-            sparse = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = prediction,
-                                                                    labels = target_output)
-            cost = tf.reduce_mean(sparse)
+            cost = tf.sqrt(tf.reduce_mean(tf.square(y - pred)))
+            l1 = tf.reduce_mean(tf.abs(pred - y))
+            l2 = tf.reduce_mean(tf.pow(pred - y, 2))
+        # Evaluate model
 
-        correct_pred = tf.equal(tf.argmax(pred, 2), y)
         with tf.name_scope('accuracy'):
-            accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+            accuracy = tf.sqrt(tf.reduce_mean(tf.square(tf.subtract(y, pred))))
 
         return pred, cost, accuracy, chunk
 

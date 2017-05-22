@@ -19,6 +19,9 @@ def get_log_dir():
 def norm(tensor):
     return tf.div((tensor - tf.reduce_min(tensor)), (tf.reduce_max(tensor) - tf.reduce_min(tensor)))
 
+def normnp(val):
+    return (val - np.min(val))/(np.max(val)-np.min(val))
+
 @register(250)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
@@ -72,9 +75,9 @@ class SummaryStage(Stage):
         start = c[0] - settings.CHUNK
         end = start + settings.CHUNK *3
 
-        plt.subplot('111').plot(res[0,start:end],'r')
-        plt.subplot('111').plot(y[0,start:end],'b', alpha=0.5)
-        plt.subplot('111').plot(x[0,start:end],'g', alpha=0.5)
+        plt.subplot('111').plot(normnp(res[0,start:end]),'r')
+        plt.subplot('111').plot(normnp(y[0,start:end]),'b', alpha=0.5)
+        plt.subplot('111').plot(normnp(x[0,start:end]),'g', alpha=0.5)
 
 
 
