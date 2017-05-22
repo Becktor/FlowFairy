@@ -2,7 +2,8 @@ import os
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
-NET = 'gglu5'
+NET = 'sm_net'
+
 
 FEATURES = [
     'feature.SineGen',
@@ -27,7 +28,8 @@ MAX_AMP = 4
 BATCH_SIZE = 32
 QUEUE_CAPACITY = 4 * BATCH_SIZE
 
-CUDA_VISIBLE_DEVICES = 3
+CUDA_VISIBLE_DEVICES = 2
+
 
 LOG_INTERVAL = 100//BATCH_SIZE
 
