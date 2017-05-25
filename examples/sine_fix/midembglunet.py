@@ -31,32 +31,32 @@ def conv_net(x, cls, dropout, is_training=False):
     #convblock 2
     conv2 = GLU(conv1, 8, [128, 1], scope='conv2_1')
     conv2 = GLU(conv2, 8, [128, 1], scope='conv2_2')
-    pool2 = slim.max_pool2d(conv2, [2,1])
+    #pool2 = slim.max_pool2d(conv2, [2,1])
     print('conv2: ', pool2)
 
     #convblock 3
-    conv3 = GLU(pool2, 16, [128, 1], scope='conv3_1')
-
     with tf.variable_scope('embedding'):
         emb1 = embedding(cls, embedding_size, num_classes)
-        embedded = broadcast(conv3, emb1)
+        embedded = broadcast(conv2, emb1)
         print('embedded:', embedded)
-    conv3 = GLU(embedded, 16, [128, 1], scope='conv3_2')
+
+    conv3 = GLU(embedded, 16, [128, 1], scope='conv3_1')
+    conv3 = GLU(conv3, 32, [128, 1], scope='conv3_2')
     print('conv3: ', conv3)
 
     with tf.name_scope('d2s1'):
-        conv4 = tf.depth_to_space(conv3, 4) #upconv
+        conv4 = tf.depth_to_space(conv3, 2) #upconv
         print('d2sp: ', conv4)
-        conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 8])
+        conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 16])
 
-    conv4 = GLU(conv4, 16, [128, 1], scope='conv4_1')
-    conv4 = GLU(conv4, 16, [128, 1], scope='conv4_2')
+    conv4 = GLU(conv4, 32, [128, 1], scope='conv4_1')
+    with tf.name_scope('concat'):
+        conv4 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
+    conv4 = GLU(conv4, 64, [128, 1], scope='conv4_2')
     print('conv4: ', conv4)
 
-    with tf.name_scope('concat'):
-        conv5 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
 
-    conv5 = GLU(conv5, discrete_class, [2,1], scope='conv5')
+    conv5 = GLU(conv4, discrete_class, [2,1], scope='conv5')
     print('conv5: ', conv5)
 
     with tf.name_scope('output'):
