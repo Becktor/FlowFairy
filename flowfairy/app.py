@@ -15,6 +15,12 @@ def load_net():
     net = importlib.import_module(settings.NET).Net()
     return net
 
+global_step = 0
+
+def set_global_step(s):
+    global global_step
+    global_step = s
+
 def run(*args, **options):
 
     coord = tf.train.Coordinator()
@@ -42,7 +48,7 @@ def run(*args, **options):
         sess.run(tf.global_variables_initializer())
 
         try:
-            step = 1
+            step = global_step + 1
             while not coord.should_stop() and not net.should_stop():
 
                 stage.run(sess, step)

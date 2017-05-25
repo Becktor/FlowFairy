@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 from flowfairy.core.stage import register, Stage, stage
 from flowfairy.conf import settings
+from flowfairy import app
 
 
 def get_log_dir():
@@ -99,5 +100,19 @@ class SavingStage(Stage):
     def before(self, sess, net):
         self.saver = tf.train.Saver()
 
+        latest = tf.train.latest_checkpoint(settings.LOG_DIR, latest_filename=self.latest_filename())
+
+        if latest:
+            self.saver.restore(sess, latest)
+            global_step = int(latest[latest.rfind('-')+1:])
+            app.set_global_step(global_step)
+            print(f'Restored {self.latest_filename()}')
+
     def run(self, sess, i):
-        self.saver.save(sess, get_log_dir()+'.ckpt', global_step=i, latest_filename=settings.LOGNAME+'.checkpoint')
+        self.saver.save(sess, self.ckpt(), global_step=i, latest_filename=self.latest_filename())
+
+    def ckpt(self):
+        return get_log_dir()+'.ckpt'
+
+    def latest_filename(self):
+        return settings.LOGNAME+'.checkpoint'
