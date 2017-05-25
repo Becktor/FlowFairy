@@ -27,6 +27,7 @@ def conv_net(x, cls, dropout, is_training=False):
 
     conv1 = causal_GLU(xs, 4, [256, 1], scope='conv1_1', normalizer_fn=slim.batch_norm, normalizer_params={'is_training': is_training, 'decay': 0.9})
     conv1 = GLU(conv1, 4, [256, 1], scope='conv1_2')
+    conv1 = GLU(conv1, 4, [256, 1], scope='conv1_3')
     pool1 = slim.max_pool2d(conv1, [2,1])
     print('conv1: ', pool1)
 
@@ -39,12 +40,14 @@ def conv_net(x, cls, dropout, is_training=False):
     #convblock 2
     conv2 = GLU(embedded, 8, [256, 1], scope='conv2_1')
     conv2 = GLU(conv2, 8, [256, 1], scope='conv2_2')
+    conv2 = GLU(conv2, 8, [256, 1], scope='conv2_3')
     pool2 = slim.max_pool2d(conv2, [2,1])
     print('conv2: ', pool2)
 
     #convblock 3
     conv3 = GLU(pool2, 16, [256, 1], scope='conv3_1')
     conv3 = GLU(conv3, 16, [256, 1], scope='conv3_2')
+    conv3 = GLU(conv3, 16, [256, 1], scope='conv3_3')
     print('conv3: ', conv3)
 
     #convblock 4
@@ -54,6 +57,7 @@ def conv_net(x, cls, dropout, is_training=False):
 
     conv4 = GLU(conv4, 16, [256, 1], scope='conv4_1')
     conv4 = GLU(conv4, 16, [256, 1], scope='conv4_2')
+    conv4 = GLU(conv4, 16, [256, 1], scope='conv4_3')
     print('conv4: ', conv4)
 
     #convblock 5
@@ -81,8 +85,7 @@ class Net:
         # Define loss and optimizer
         cost = tf.losses.sparse_softmax_cross_entropy(logits = prediction,
                                                       labels = target_output,
-                                                      scope='xentropy')
-
+                                                      scope='cost')
         correct_pred = tf.equal(tf.argmax(pred, 2), y)
         with tf.name_scope('accuracy'):
             accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))

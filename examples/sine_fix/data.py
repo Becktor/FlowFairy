@@ -13,9 +13,9 @@ step = (frq_max - frq_min) / frequency_count
 
 frqs = list(enumerate(np.arange(frq_min, frq_max, step)))
 blnds = list(frqs)
-random.shuffle(blnds)
+#random.shuffle(blnds)
 
-val_cut = int(frequency_count * 0.75)
+#val_cut = int(frequency_count * 0.75)
 
 def frequencies():
     while True:
@@ -23,13 +23,13 @@ def frequencies():
         yield from frqs
 
 def blends_train():
-    blends = list(blnds[:val_cut])
+    blends = blnds[0::4] + blnds[1::4] + blnds[2::4]
     while True:
         random.shuffle(blends)
         yield from blends
 
 def blends_val():
-    blends = list(blnds[val_cut:])
+    blends = blnds[3::4]
     while True:
         random.shuffle(blends)
         yield from blends

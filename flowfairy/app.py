@@ -32,7 +32,7 @@ def run(*args, **options):
                 X = queue.dequeue()
                 func = getattr(net, data_loader.name)
                 func(**dict(zip(fts.fields, X)))
-                scope.reuse_variables()
+            scope.reuse_variables()
 
     with tf.Session() as sess:
 

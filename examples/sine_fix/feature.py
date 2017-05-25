@@ -21,7 +21,7 @@ class SineGen(Feature):
     def feature(self, frequencies, blends, **kwargs):
         frq1, frq2 = frequencies, blends
 
-        amp = np.random.rand(2,1) * max_amp
+        amp = np.random.rand(2,1) * max_amp + 1 # [1;max_amp)
         phase = np.random.rand(2,1) * np.pi * 2
         sines = np.tile(self.arr, (2,1)) * amp
 

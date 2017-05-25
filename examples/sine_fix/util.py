@@ -46,9 +46,10 @@ def avgpool2d(x, k=2):
                           padding='SAME')
 
 def GLU(x, num_filters, kernel_size, scope='glu', **kwargs):
-    A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
-    B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
-    return A * tf.sigmoid(B)
+    with tf.name_scope('glu_'+scope):
+        A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
+        B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
+        return A * tf.sigmoid(B)
 
 def GTU(x, num_filters, kernel_size, scope='gtu', **kwargs):
     A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
@@ -57,11 +58,12 @@ def GTU(x, num_filters, kernel_size, scope='gtu', **kwargs):
 
 def causal_conv(conv):
     def causal(x, num_filters, kernel_size, scope='causal', **kwargs):
-        width = kernel_size[0]//2
-        pad_size = x.get_shape().as_list()
-        pad_size[1] = width
-        x = tf.concat([tf.zeros(pad_size), x], axis=1)[:,:-width]
-        return conv(x, num_filters, kernel_size, scope, **kwargs)
+        with tf.name_scope('causal_'+scope):
+            width = kernel_size[0]//2
+            pad_size = x.get_shape().as_list()
+            pad_size[1] = width
+            x = tf.concat([tf.zeros(pad_size), x], axis=1)[:,:-width]
+            return conv(x, num_filters, kernel_size, scope, **kwargs)
     return causal
 
 causal_GLU = causal_conv(GLU)
