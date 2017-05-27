@@ -2,7 +2,7 @@ import os
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
-NET = 'gglu5'
+NET = 'dilated'
 
 FEATURES = [
     'feature.SineGen',
@@ -17,11 +17,11 @@ DURATION = 1
 DROPOUT = 0.50
 LEARNING_RATE = 0.001
 CLASS_COUNT = 200
-FREQUENCY_START = 300
+FREQUENCY_START = 200
 FREQUENCY_LIMIT = (FREQUENCY_START, FREQUENCY_START + CLASS_COUNT*2)
 EMBEDDING_SIZE = 2
 DISCRETE_CLASS = 256
-MAX_AMP = 4
+MAX_AMP = 3
 
 
 BATCH_SIZE = 32
