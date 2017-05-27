@@ -34,10 +34,10 @@ def run(*args, **options):
             queues.append(queue)
 
 
-            with tf.name_scope(data_loader.name):
-                X = queue.dequeue()
-                func = getattr(net, data_loader.name)
-                func(**dict(zip(fts.fields, X)))
+
+            X = queue.dequeue()
+            func = getattr(net, data_loader.name)
+            func(**dict(zip(fts.fields, X)))
             scope.reuse_variables()
 
     with tf.Session() as sess:
