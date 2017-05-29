@@ -7,12 +7,12 @@ NET = 'net'
 FEATURES = [
     'feature.SineGen',
     'feature.NoisySineGen',
-    'feature.ConvertToClasses',
+#    'feature.ConvertToClasses',
     #'feature.Dropout',
     'feature.Chunk'
 ]
 
-SAMPLERATE = 11024
+SAMPLERATE = 2**14
 DURATION = 1
 DROPOUT = 0.50
 LEARNING_RATE = 0.001

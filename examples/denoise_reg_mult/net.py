@@ -1,7 +1,7 @@
 import ops
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-import model1 as model
+import model4 as model
 from flowfairy.conf import settings
 from util import lrelu, conv2d, maxpool2d, GLU, causal_GLU
 
@@ -20,18 +20,13 @@ class Net:
     def feedforward(self, x, y, chunk, is_training=False):
         pred = model.conv_net(x, is_training)
 
-        target_output = tf.reshape(y,[-1])
-        prediction = tf.reshape(pred,[-1, discrete_class])
-
         # Define loss and optimizer
         with tf.name_scope('cost'):
-            cost = tf.losses.sparse_softmax_cross_entropy(logits = prediction,
-                                                          labels = target_output,
-                                                          scope='xentropy')
+            cost = tf.reduce_mean(tf.abs(pred - y))
+            tf.losses.add_loss(cost,loss_collection=tf.GraphKeys.LOSSES)
 
-        correct_pred = tf.equal(tf.argmax(pred, 2), y)
         with tf.name_scope('accuracy'):
-            accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+             accuracy = tf.sqrt(tf.reduce_mean(tf.square(y - pred)))
 
         return pred, cost, accuracy, chunk
 
