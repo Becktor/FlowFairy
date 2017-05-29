@@ -51,6 +51,12 @@ def GLU(x, num_filters, kernel_size, scope='glu', **kwargs):
         B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
         return A * tf.sigmoid(B)
 
+def reluGLU(x, num_filters, kernel_size, scope='glu', **kwargs):
+    with tf.name_scope('rglu_'+scope):
+        A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
+        B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
+        return A * tf.nn.relu6(B)
+
 def GTU(x, num_filters, kernel_size, scope='gtu', **kwargs):
     A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
     B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
