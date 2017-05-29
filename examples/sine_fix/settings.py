@@ -2,7 +2,7 @@ import os
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
-NET = 'netops'
+NET = 'nets.midembglunet'
 
 FEATURES = [
     #'feature.SineGen',
