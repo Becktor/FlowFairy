@@ -57,11 +57,11 @@ def conv_net(x, cls, dropout, is_training=False):
         print('d2sp: ', conv4)
 
     conv4 = GLU(conv4, 16, [128, 1], scope='conv4_1')
-    with tf.name_scope('concat'):
-        conv4 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
-    conv4 = GLU(conv4, 32, [128, 1], scope='conv4_2')
+    conv4 = GLU(conv4, 16, [128, 1], scope='conv4_2')
     print('conv4: ', conv4)
 
+    with tf.name_scope('concat'):
+        conv4 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
     conv5 = GLU(conv4, discrete_class, [2,1], scope='conv5')
     print('conv5: ', conv5)
 

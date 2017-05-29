@@ -2,7 +2,12 @@ import os
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
+<<<<<<< HEAD
 NET = 'netops'
+=======
+NET = 'midembglunet'
+
+>>>>>>> 963e0a59f1960d11eda7a0737887e72d70c50cec
 
 FEATURES = [
     'feature.SineGen',
@@ -21,7 +26,8 @@ FREQUENCY_START = 200
 FREQUENCY_LIMIT = (FREQUENCY_START, FREQUENCY_START + CLASS_COUNT*2)
 EMBEDDING_SIZE = 2
 DISCRETE_CLASS = 256
-MAX_AMP = 3
+MAX_AMP = 2
+
 
 
 BATCH_SIZE = 32
