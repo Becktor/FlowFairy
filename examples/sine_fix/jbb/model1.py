@@ -59,9 +59,10 @@ def conv_net(x, cls, dropout, is_training=False):
     with tf.name_scope('concat'):
         conv4 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
     conv4 = GLU(conv4, 32, [128, 1], scope='conv4_2')
+    conv4 = GLU(conv4, 64, [128, 1], scope='conv4_3')
     print('conv4: ', conv4)
 
-    conv5 = GLU(conv4, discrete_class, [2,1], scope='conv5')
+    conv5 = slim.conv2d(conv4, discrete_class, [1,1], scope='conv5')
     print('conv5: ', conv5)
 
     with tf.name_scope('output'):
