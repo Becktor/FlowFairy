@@ -2,7 +2,7 @@ import os
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
-NET = 'net2'
+NET = 'jobeNet'
 
 FEATURES = [
     #'feature.SineGen',
@@ -37,6 +37,6 @@ LOG_DIR = os.path.join(base_dir, "logs")
 
 DATA = {
     'train': (),
-    'validation': (),
+    # 'validation': (),
     'test': ()
 }
