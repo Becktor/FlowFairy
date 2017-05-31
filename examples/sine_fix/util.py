@@ -92,8 +92,6 @@ def random_noisy_speech(speech, noise, outputlen, micdist, sr=22050):
     pos = tf.random_uniform([1, 1], 0, np.float32(np.pi))
     cord = circle_coord(pos, 1.0)
 
-    print('speech',speech)
-
     # dist to each microphone vector of shape bs
     dst_mic_L = tf.sqrt((-micdist - cord[:, 0]) ** 2 + (0 - cord[:, 1]) ** 2)
     dst_mic_R = tf.sqrt((micdist - cord[:, 0]) ** 2 + (0 - cord[:, 1]) ** 2)
@@ -111,7 +109,6 @@ def random_noisy_speech(speech, noise, outputlen, micdist, sr=22050):
     noise_L = noise_L[:, :outputlen]
     noise_R = noise_R[:, :outputlen]
     speech = speech[:, :outputlen]
-    print('speech', speech)
 
     x_left = speech + noise_L
     x_right = speech + noise_R

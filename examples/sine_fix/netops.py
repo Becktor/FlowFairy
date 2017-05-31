@@ -5,7 +5,7 @@ from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d, GLU, causal_GLU
 from functools import partial
 import ops
 
-from dilated import conv_net
+from dilated4 import conv_net
 
 learning_rate = settings.LEARNING_RATE
 discrete_class = settings.DISCRETE_CLASS
@@ -15,8 +15,8 @@ outputlen = settings.OUTPUTLEN
 class Net:
 
     def feedforward(self, x, blend, y, frqid, frqid2, is_training=False):
-        x, _, _, _ = random_noisy_speech(x, blend, outputlen, 0.1, sr=settings.SAMPLERATE)
-        y = y[:,:outputlen,0]
+        #x, _, _, _ = random_noisy_speech(x, blend, outputlen, 0.1, sr=settings.SAMPLERATE)
+        #y = y[:,:outputlen,0]
         print('x', x)
         pred = conv_net(x, frqid, None, is_training)
 

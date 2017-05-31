@@ -27,7 +27,6 @@ class SineGen(Feature):
 
         x = (np.sin(sines * np.array([[ frq1[1] ], [frq2[1]]]) + phase) * amp).astype('float32')
         x = x[:,:,None] # add channel
-        print('x shape', x.shape)
         y = x[0]
 
         return {'y': y, 'x': x[0], 'blend': x[1], 'frqid': np.array(frq1[0], dtype=np.int32), 'frqid2': np.array(frq2[0])}
@@ -39,8 +38,6 @@ class NoisySineGen(Feature):
 
     def feature(self, x, blend, **kwargs):
         noise = np.random.uniform(-0.5, 0.5, (2, samplerate, 1)).astype('float32')
-        noisy = noise[0]+x
-        print('noisy shape', noisy.shape)
         return {'x': noise[0]+x, 'blend': blend+noise[1]}
 
 
