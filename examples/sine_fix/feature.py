@@ -1,10 +1,12 @@
-from flowfairy.feature import Feature
+from flowfairy.feature import Feature, FeatureError
 from flowfairy.conf import settings
 
 import numpy as np
+import soundfile as sf
 
 
 samplerate = settings.OUTPUTLEN + 2000
+outputlen = samplerate
 duration = settings.DURATION
 frequency_count = settings.CLASS_COUNT
 frq_min, frq_max = settings.FREQUENCY_LIMIT
@@ -12,7 +14,9 @@ step = (frq_max - frq_min) / frequency_count
 max_amp = settings.MAX_AMP
 
 def classify(val):
-    val = (val-np.min(val))/(np.max(val)-np.min(val))
+    """
+    Assuming normalized input
+    """
     return np.floor(val*255)
 
 class SineGen(Feature):
@@ -57,3 +61,43 @@ class ConvertToClasses(Feature):
 
     def feature(self, x, y, **kwargs):
         return {'y': classify(y).astype('int64')}
+
+
+class Speech(Feature):
+    def load(self, npz):
+        l = np.load(npz)
+
+        af = str(l['audio_file']).replace('//', '/')
+
+        original, _ = sf.read(af)
+
+        maxidx = original.shape[0] - outputlen
+
+        retries = 5
+        for i in range(retries):
+            lidx = np.random.randint(maxidx)
+            ridx = lidx + outputlen
+
+            audio = original[lidx:ridx]
+
+            audio += np.abs(audio.min())
+            amax = audio.max()
+
+            if amax <= 5e-1:
+                #print(f'{amax} audio, file: {npz} at idx {lidx}')
+                if i+1 == retries:
+                    raise FeatureError('Too silent')
+                continue
+
+            audio /= amax
+
+            audio = audio[:,None]  # None for channel dim
+            break
+
+        return l['speaker_class'].astype('int32'), audio.astype('float32')
+
+    def feature(self, speaker, blend):
+        sid, saudio = self.load(speaker)
+        bid, baudio = self.load(blend)
+
+        return {'x': saudio, 'y': saudio, 'blend': baudio, 'spkid': sid}

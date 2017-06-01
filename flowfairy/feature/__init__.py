@@ -81,12 +81,20 @@ class FeatureManager:
         # Filter the dict so we only get what we want
         return [self._latest[key] for key in self.fields]
 
+    def _run_features(self, initial_data):
+        data = {}
+        for feature in self.features:
+            data.update(feature.feature(**data, **initial_data))
+            initial_data = {k:v for k,v in initial_data.items() if k not in data}
+
+        return data
 
     def get_features(self):
-        for data in self.dataloader:
-
-            for feature in self.features:
-                data.update(feature.feature(**data))
+        for initial_data in self.dataloader:
+            try:
+                data = self._run_features(initial_data)
+            except FeatureError:
+                continue
 
             yield data
 
@@ -98,3 +106,5 @@ class FeatureManager:
         self._latest = next(self._data_gen)
         return self.filtered()
 
+class FeatureError(Exception):
+    pass

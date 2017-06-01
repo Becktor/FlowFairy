@@ -5,9 +5,10 @@ base_dir = os.path.dirname(os.path.realpath(__file__))
 NET = 'netops'
 
 FEATURES = [
-    'feature.SineGen',
-    'feature.NoisySineGen',
+    #'feature.SineGen',
+    #'feature.NoisySineGen',
     #'feature.Dropout',
+    'feature.Speech',
     'feature.ConvertToClasses'
     #'feature.Mask'
 ]
@@ -17,7 +18,7 @@ OUTPUTLEN = 11024
 DURATION = 1
 DROPOUT = 0.50
 LEARNING_RATE = 0.001 # 5e-4
-CLASS_COUNT = 200
+CLASS_COUNT = 2483
 FREQUENCY_START = 200
 FREQUENCY_LIMIT = (FREQUENCY_START, FREQUENCY_START + CLASS_COUNT*2)
 EMBEDDING_SIZE = 2
@@ -28,7 +29,7 @@ MAX_AMP = 3
 BATCH_SIZE = 32
 QUEUE_CAPACITY = 4 * BATCH_SIZE
 
-CUDA_VISIBLE_DEVICES = 3
+CUDA_VISIBLE_DEVICES = 2
 
 LOG_INTERVAL = 100//BATCH_SIZE
 

@@ -5,7 +5,7 @@ from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d, GLU, causal_GLU
 from functools import partial
 import ops
 
-from dilated4 import conv_net
+from dilated import conv_net
 
 learning_rate = settings.LEARNING_RATE
 discrete_class = settings.DISCRETE_CLASS
@@ -14,11 +14,11 @@ outputlen = settings.OUTPUTLEN
 
 class Net:
 
-    def feedforward(self, x, blend, y, frqid, frqid2, is_training=False):
-        #x, _, _, _ = random_noisy_speech(x, blend, outputlen, 0.1, sr=settings.SAMPLERATE)
-        #y = y[:,:outputlen,0]
+    def feedforward(self, x, blend, y, spkid, is_training=False):
+        x, _, _, _ = random_noisy_speech(x, blend, outputlen, 0.1, sr=settings.SAMPLERATE)
+        y = y[:,:outputlen,0]
         print('x', x)
-        pred = conv_net(x, frqid, None, is_training)
+        pred = conv_net(x, spkid, None, is_training)
 
         target_output = tf.reshape(y,[-1])
         prediction = tf.reshape(pred,[-1, discrete_class])
@@ -55,7 +55,6 @@ class Net:
         self.val_y = kwargs['y']
 
         self.val_x, self.val_pred, self.val_cost, self.val_acc, self.val_uncertainty, self.val_ouncertainty = self.feedforward(**kwargs)
-        self.val_pred = tf.Print(self.val_pred, [kwargs['frqid'], kwargs['frqid2']], message='frqids: ')
 
     def begin(self, session):
         #session.run(self.init)

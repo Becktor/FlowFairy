@@ -17,6 +17,10 @@ from flowfairy import app
 def get_log_dir():
     return os.path.join(settings.LOG_DIR, settings.LOGNAME)
 
+def norm(tensor):
+    tmin = tf.reduce_min(tensor)
+    return tf.div((tensor - tmin), (tf.reduce_max(tensor) - tmin) + 1e-12)
+
 @register(250)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
@@ -40,6 +44,11 @@ class SummaryStage(Stage):
         tf.contrib.layers.summarize_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
         self.net = net
 
+        arg = tf.argmax(self.net.train_pred, 2)
+        tf.summary.audio('input', norm(self.net.train_x), settings.SAMPLERATE)
+        tf.summary.audio('target', norm(tf.cast(self.net.train_y, tf.float32)), settings.SAMPLERATE)
+        tf.summary.audio('pred', norm(tf.cast(arg, tf.float32)), settings.SAMPLERATE)
+
         self.reset_fig()
         img = self.fig2rgb_array()
 
@@ -59,6 +68,7 @@ class SummaryStage(Stage):
     def plot(self, sess, pred, x, y, unc):
         self.reset_fig()
 
+        x = norm(x)
         res, x, y, unc = sess.run([ pred, x, y, unc ])
         x = classify(x)
         res = np.argmax(res, 2)

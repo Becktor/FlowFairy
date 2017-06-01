@@ -14,16 +14,16 @@ num_classes = settings.CLASS_COUNT
 def broadcast(l, emb):
     sh = l.get_shape().as_list()[1]
     emb = emb[:, None, None, :]
-    print(sh)
     emb = tf.tile(emb, (1,sh,1,1))
     return tf.concat([l, emb], 3)
 
 
 # Create model
 def conv_net(x, cls, dropout, is_training=False):
-    xs = tf.expand_dims(x, -2)
+    xs = tf.expand_dims(x, -1)
+    xs = tf.expand_dims(xs, -1)
 
-    conv1 = GLU(xs, 4, [128, 1], scope='conv1_1', normalizer_fn=slim.batch_norm, normalizer_params={'is_training': is_training, 'decay': 0.9})
+    conv1 = causal_GLU(xs, 4, [128, 1], scope='conv1_1', normalizer_fn=slim.batch_norm, normalizer_params={'is_training': is_training, 'decay': 0.9})
     print('conv1', conv1)
 
     conv1_d1 = GLU(conv1, 4, [128, 1], scope='conv1_d1')
@@ -38,14 +38,16 @@ def conv_net(x, cls, dropout, is_training=False):
 
     conv1 = tf.concat([conv1_d1, conv1_d2, conv1_d4], 3)
     print('conv1_concat', conv1)
-    conv1 = GLU(conv1, 8, [128, 1], scope='conv1_2')
-    print('conv1: ', conv1)
+
+
+
     #conv1 = GLU(conv1, 4, [256, 1], scope='conv1_2')
 
     #with tf.name_scope('embedding'):
 
     #convblock 2
     conv2 = GLU(conv1, 8, [128, 1], scope='conv2_1')
+    conv2 = GLU(conv2, 8, [128, 1], scope='conv2_2')
     conv2 = slim.max_pool2d(conv2, [2,1])
     print('conv2: ', conv2)
 
@@ -62,21 +64,20 @@ def conv_net(x, cls, dropout, is_training=False):
     #convblock 4
     conv4 = tf.depth_to_space(conv3, 4) #upconv
     print('d2sp: ', conv4)
-    conv1shape = conv1.get_shape().as_list()
-    conv4 = tf.reshape(conv4, shape=conv1shape[:3]+[8]) # reshape upconvolution to have proper shape
-    conv4 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
+    conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 8]) # reshape upconvolution to have proper shape
 
-    conv4 = GLU(conv4, 32, [128, 1], scope='conv4_1')
+    conv4 = GLU(conv4, 16, [128, 1], scope='conv4_1')
     #convblock 5
-    conv4 = GLU(conv4, 64, [128, 1], scope='conv4_2')
+    conv4 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
+    conv4 = GLU(conv4, 16, [128, 1], scope='conv4_2')
     print('conv4: ', conv4)
 
 
-    conv5 = slim.conv2d(conv4, discrete_class, [1,1], scope='conv5', activation_fn=lrelu)
+    conv5 = GLU(conv4, discrete_class, [2,1], scope='conv5')
     print('conv5: ', conv5)
 
     #out
-    out = tf.reshape(conv5, [-1, conv1shape[1], discrete_class])
+    out = tf.reshape(conv5, [-1, sr, discrete_class])
     print('out: ', out)
     return out
 

@@ -21,7 +21,8 @@ def broadcast(l, emb):
 
 # Create model
 def conv_net(x, cls, dropout, is_training=False):
-    xs = tf.expand_dims(x, -2)
+    xs = tf.expand_dims(x, -1)
+    xs = tf.expand_dims(xs, -1)
 
     conv1 = GLU(xs, 4, [128, 1], scope='conv1_1', normalizer_fn=slim.batch_norm, normalizer_params={'is_training': is_training, 'decay': 0.9})
     print('conv1', conv1)
@@ -66,13 +67,13 @@ def conv_net(x, cls, dropout, is_training=False):
     conv4 = tf.reshape(conv4, shape=conv1shape[:3]+[8]) # reshape upconvolution to have proper shape
     conv4 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
 
-    conv4 = GLU(conv4, 32, [128, 1], scope='conv4_1')
+    conv4 = GLU(conv4, 16, [128, 1], scope='conv4_1')
     #convblock 5
-    conv4 = GLU(conv4, 64, [128, 1], scope='conv4_2')
+    conv4 = GLU(conv4, 16, [128, 1], scope='conv4_2')
     print('conv4: ', conv4)
 
 
-    conv5 = slim.conv2d(conv4, discrete_class, [1,1], scope='conv5', activation_fn=lrelu)
+    conv5 = GLU(conv4, discrete_class, [2,1], scope='conv5')
     print('conv5: ', conv5)
 
     #out
