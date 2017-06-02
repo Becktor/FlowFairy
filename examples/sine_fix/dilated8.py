@@ -23,7 +23,7 @@ def broadcast(l, emb):
 def conv_net(x, cls, dropout, is_training=False):
     xs = tf.expand_dims(x, -2)
 
-    conv1 = GLU(xs, 4, [128, 1], scope='conv1_1', normalizer_fn=slim.batch_norm, normalizer_params={'is_training': is_training})
+    conv1 = GLU(xs, 4, [128, 1], scope='conv1_1', normalizer_fn=slim.batch_norm, normalizer_params={'is_training': is_training)
     print('conv1', conv1)
 
     conv1_d1 = GLU(conv1, 8, [128, 1], scope='conv1_d1')

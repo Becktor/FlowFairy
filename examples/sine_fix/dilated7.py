@@ -26,19 +26,23 @@ def conv_net(x, cls, dropout, is_training=False):
     conv1 = GLU(xs, 4, [128, 1], scope='conv1_1', normalizer_fn=slim.batch_norm, normalizer_params={'is_training': is_training})
     print('conv1', conv1)
 
-    conv1_d1 = GLU(conv1, 8, [128, 1], scope='conv1_d1')
+    conv1_d1 = GLU(conv1, 8, [128, 1], scope='conv1_d1_1')
+    conv1_d1 = GLU(conv1_d1, 8, [128, 1], scope='conv1_d1_2')
     print('conv1_d1 ', conv1_d1)
 
     # Parallel
-    conv1_d2 = GLU(conv1, 8, [128, 1], rate=2, scope='conv1_d2')
+    conv1_d2 = GLU(conv1, 8, [128, 1], rate=2, scope='conv1_d2_1')
+    conv1_d2 = GLU(conv1_d2, 8, [128, 1], rate=2, scope='conv1_d2_2')
     print('conv1_d2 ', conv1_d2)
 
-    conv1_d4 = GLU(conv1, 8, [128, 1], rate=4, scope='conv1_d4')
+    conv1_d4 = GLU(conv1, 8, [128, 1], rate=4, scope='conv1_d4_1')
+    conv1_d4 = GLU(conv1_d4, 8, [128, 1], rate=4, scope='conv1_d4_2')
     print('conv1_d4 ', conv1_d4)
 
     conv1 = tf.concat([conv1_d1, conv1_d2, conv1_d4], 3)
     print('conv1_concat', conv1)
     conv1 = GLU(conv1, 16, [128, 1], scope='conv1_2')
+    conv1 = GLU(conv1, 16, [128, 1], scope='conv1_3')
     print('conv1: ', conv1)
     #conv1 = GLU(conv1, 4, [256, 1], scope='conv1_2')
 
@@ -46,6 +50,7 @@ def conv_net(x, cls, dropout, is_training=False):
 
     #convblock 2
     conv2 = GLU(conv1, 32, [128, 1], scope='conv2_1')
+    conv2 = GLU(conv1, 32, [128, 1], scope='conv2_2')
     conv2 = slim.max_pool2d(conv2, [2,1])
     print('conv2: ', conv2)
 
@@ -67,8 +72,10 @@ def conv_net(x, cls, dropout, is_training=False):
     conv4 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
 
     conv4 = GLU(conv4, 64, [128, 1], scope='conv4_1')
+    conv4 = GLU(conv4, 64, [128, 1], scope='conv4_2')
     #convblock 5
-    conv4 = GLU(conv4, 128, [128, 1], scope='conv4_2')
+    conv4 = GLU(conv4, 128, [128, 1], scope='conv4_3')
+    conv4 = GLU(conv4, 128, [128, 1], scope='conv4_4')
     print('conv4: ', conv4)
 
 
