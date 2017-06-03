@@ -23,16 +23,14 @@ def conv_net(x, cls, dropout, is_training=False):
     with tf.name_scope('input'):
         xs = tf.expand_dims(x, -2)
 
-    conv1 = GLU(xs, 4, [256, 1],  scope='conv1_1',
+    conv1 = GLU(xs, 4, [128, 1],  scope='conv1_1',
                 normalizer_fn=slim.batch_norm,
                 normalizer_params={'is_training': is_training,
                                    'decay': 0.9})
     print('conv1: ', conv1)
-    conv1 = GLU(conv1, 4, [256, 1], scope='conv1_2')
+    conv1 = GLU(conv1, 4, [128, 1], scope='conv1_2')
     #pool1 = slim.max_pool2d(conv1, [2,1])
     print('conv1: ', conv1)
-
-
     #convblock 2
     conv2 = GLU(conv1, 8, [128, 1], scope='conv2_1')
     print('conv2: ', conv2)
@@ -64,7 +62,7 @@ def conv_net(x, cls, dropout, is_training=False):
     conv4 = GLU(conv4, 64, [128, 1], scope='conv4_3')
     print('conv4: ', conv4)
 
-    conv5 = slim.conv2d(conv4, discrete_class, [1,1], scope='conv5')
+    conv5 = slim.conv2d(conv4, discrete_class, [1,1], activation_fn=lrelu, scope='conv5')
     print('conv5: ', conv5)
 
     with tf.name_scope('output'):

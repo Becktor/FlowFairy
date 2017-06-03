@@ -1,7 +1,7 @@
 import ops
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-import settings16 as settings
+from flowfairy.conf import settings
 from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d, GLU, causal_GLU
 
 discrete_class = settings.DISCRETE_CLASS
@@ -20,7 +20,8 @@ def broadcast(l, emb):
 
 # Create model
 def conv_net(x, cls, dropout, is_training=False):
-    xs = tf.reshape(x, shape=[-1, sr, 1, 1])
+    with tf.name_scope('input'):
+        xs = tf.expand_dims(x, -2)
 
     conv1 = GLU(xs, 4, [256, 1],  scope='conv1_1',
                 normalizer_fn=slim.batch_norm,
@@ -52,7 +53,8 @@ def conv_net(x, cls, dropout, is_training=False):
 
     with tf.name_scope('d2s1'):
         conv4 = tf.depth_to_space(conv3, 4) #upconv
-        conv4 = tf.reshape(conv4, shape=[-1, sr, 1, 8])
+        conv1shape = conv1.get_shape().as_list()
+        conv4 = tf.reshape(conv4, shape=conv1shape[:3]+[8]) # reshape upconvolution to have proper shape
         print('d2sp: ', conv4)
 
     conv4 = GLU(conv4, 16, [128, 1], scope='conv4_1')
@@ -62,10 +64,10 @@ def conv_net(x, cls, dropout, is_training=False):
     conv4 = GLU(conv4, 64, [128, 1], scope='conv4_3')
     print('conv4: ', conv4)
 
-    conv5 = slim.conv2d(conv4, discrete_class, [1,1], scope='conv5')
+    conv5 = slim.conv2d(conv4, discrete_class, [2,1], scope='conv5')
     print('conv5: ', conv5)
 
     with tf.name_scope('output'):
-        out = tf.reshape(conv5, [-1, sr, discrete_class])
+        out = tf.reshape(conv5, [-1, conv1shape[1], discrete_class])
     print('out: ', out)
     return out
