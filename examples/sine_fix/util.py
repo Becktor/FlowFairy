@@ -1,4 +1,6 @@
+import numpy as np
 import tensorflow as tf
+from functools import partial
 import tensorflow.contrib.slim as slim
 from tensorflow.contrib.layers.python.layers import initializers
 
@@ -46,9 +48,16 @@ def avgpool2d(x, k=2):
                           padding='SAME')
 
 def GLU(x, num_filters, kernel_size, scope='glu', **kwargs):
-    A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
-    B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
-    return A * tf.sigmoid(B)
+    with tf.name_scope('glu_'+scope):
+        A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
+        B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
+        return A * tf.sigmoid(B)
+
+def reluGLU(x, num_filters, kernel_size, scope='glu', **kwargs):
+    with tf.name_scope('rglu_'+scope):
+        A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
+        B = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_gate', activation_fn=None, **kwargs)
+        return A * tf.nn.relu6(B)
 
 def GTU(x, num_filters, kernel_size, scope='gtu', **kwargs):
     A = slim.conv2d(x, num_filters, kernel_size, scope=scope+'_unit', activation_fn=None, **kwargs)
@@ -57,11 +66,96 @@ def GTU(x, num_filters, kernel_size, scope='gtu', **kwargs):
 
 def causal_conv(conv):
     def causal(x, num_filters, kernel_size, scope='causal', **kwargs):
-        width = kernel_size[0]//2
-        pad_size = x.get_shape().as_list()
-        pad_size[1] = width
-        x = tf.concat([tf.zeros(pad_size), x], axis=1)[:,:-width]
-        return conv(x, num_filters, kernel_size, scope, **kwargs)
+        with tf.name_scope('causal_'+scope):
+            width = kernel_size[0]//2
+            pad_size = x.get_shape().as_list()
+            pad_size[1] = width
+            x = tf.concat([tf.zeros(pad_size), x], axis=1)[:,:-width]
+            return conv(x, num_filters, kernel_size, scope, **kwargs)
     return causal
 
 causal_GLU = causal_conv(GLU)
+
+DEG_TO_RAD = np.pi / 180
+SHIFT_IN_RAD = np.pi / 2.0 # shift zero to be in front
+SPEECH_INTERVAL_RAD = 15*DEG_TO_RAD
+MICDIST = 0.1
+SPEED_OF_SOUND = 340 # m/s
+deg15 = 15*DEG_TO_RAD
+
+def circle_coord(rad, r=1):
+    x = r*tf.cos(rad)
+    y = r*tf.sin(rad)
+    return tf.concat([x, y], 1)
+
+def random_noisy_speech(speech, noise, outputlen, micdist, sr=22050):
+    # sample single random pos
+    bs, seq_len, _ = speech.get_shape().as_list()
+    left = tf.random_uniform([1, 1], np.float32(np.pi)/2 + deg15, np.float32(np.pi))
+    right = tf.random_uniform([1, 1], 0, np.float32(np.pi)/2 - deg15)
+    selector = tf.cast(tf.random_uniform([1], maxval=2, dtype=tf.int32), tf.float32)
+    pos = (1-selector) * left + selector * right
+    # Force pos to be to either side
+    cord = circle_coord(pos, 1.0)
+
+    # dist to each microphone vector of shape bs
+    dst_mic_L = tf.sqrt((-micdist - cord[:, 0]) ** 2 + (0 - cord[:, 1]) ** 2)
+    dst_mic_R = tf.sqrt((micdist - cord[:, 0]) ** 2 + (0 - cord[:, 1]) ** 2)
+
+    # number of sample offset to each microphone.
+    offset_L = tf.cast(tf.round((dst_mic_L / SPEED_OF_SOUND) * sr), tf.int32)
+    offset_R = tf.cast(tf.round((dst_mic_R / SPEED_OF_SOUND) * sr), tf.int32)
+    # set minimum offset to 0
+    min_offset = tf.reduce_min(tf.concat([offset_L, offset_R], axis=0))
+    offset_L -= min_offset
+    offset_R -= min_offset
+
+    noise_L = noise[:, offset_L[0]:]
+    noise_R = noise[:, offset_R[0]:]
+    noise_L = noise_L[:, :outputlen]
+    noise_R = noise_R[:, :outputlen]
+    speech = speech[:, :outputlen]
+
+    x_left = speech + noise_L
+    x_right = speech + noise_R
+    x = tf.concat([x_left, x_right], axis=2)
+    y = tf.concat([speech, speech], axis=2)
+
+    # dummies
+    speech_rad = tf.zeros((bs, 1))
+    noise_rad = tf.zeros_like(speech_rad)
+
+    noise_rad += pos[0] - (np.pi/2.0)
+
+    # shift noise_Rad to lie in -pi/2, pi/2 instead of 0,pi
+
+    return x, y, speech_rad, noise_rad
+
+
+blk_idx = 0
+def dense_block(inl, blockcmp, cmpargs, pool=True, pool_kernel=[2,1], size=5, is_training=False):
+    global blk_idx
+    blk_idx += 1
+    with tf.variable_scope('dense_%i' % blk_idx):
+        inl = slim.batch_norm(inl, is_training=is_training)
+        inl = lrelu(inl, leak=0.1)
+
+        with tf.variable_scope('d_%i' % 0):
+            clayer = blockcmp(inl, **cmpargs)
+        layers = [inl, clayer]
+
+        for i in range(size-1):
+            with tf.variable_scope(f'd_{i+1}'):
+                clayer = tf.concat(layers, axis=3)
+                clayer = blockcmp(clayer, **cmpargs)
+                layers += [clayer]
+
+        if pool:
+            pooled = slim.max_pool2d(clayer, pool_kernel)
+            return pooled, clayer
+        return None, clayer
+
+
+def reset():
+    global blk_idx
+    blk_idx = 0
