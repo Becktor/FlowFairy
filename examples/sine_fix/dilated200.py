@@ -12,7 +12,7 @@ embedding_size = settings.EMBEDDING_SIZE
 num_classes = settings.CLASS_COUNT
 
 def broadcast(l, emb):
-    sh = l.get_shape().as_list()[1]
+    sh = tf.shape(l)[1]
     emb = emb[:, None, None, :]
     print(sh)
     emb = tf.tile(emb, (1,sh,1,1))
@@ -26,31 +26,30 @@ def conv_net(x, cls, dropout, is_training=False):
     conv1 = GLU(xs, 4, [128, 1], scope='conv1_1', normalizer_fn=slim.batch_norm, normalizer_params={'is_training': is_training})
     print('conv1', conv1)
 
-    conv1_d1 = GLU(conv1, 8, [128, 1], scope='conv1_d1_1')
+    conv1_d1 = GLU(conv1, 8, [128, 1], normalizer_fn=slim.batch_norm,scope='conv1_d1_1')
     conv1_d1 = GLU(conv1_d1, 8, [128, 1], normalizer_fn=slim.batch_norm, scope='conv1_d1_2')
     print('conv1_d1 ', conv1_d1)
 
     # Parallel
-    conv1_d2 = GLU(conv1, 8, [128, 1], rate=2, scope='conv1_d2_1')
+    conv1_d2 = GLU(conv1, 8, [128, 1],normalizer_fn=slim.batch_norm, rate=2, scope='conv1_d2_1')
     conv1_d2 = GLU(conv1_d2, 8, [128, 1],normalizer_fn=slim.batch_norm, rate=2, scope='conv1_d2_2')
     print('conv1_d2 ', conv1_d2)
 
-    conv1_d4 = GLU(conv1, 8, [128, 1], rate=4, scope='conv1_d4_1')
+    conv1_d4 = GLU(conv1, 8, [128, 1],normalizer_fn=slim.batch_norm, rate=4, scope='conv1_d4_1')
     conv1_d4 = GLU(conv1_d4, 8, [128, 1],normalizer_fn=slim.batch_norm, rate=4, scope='conv1_d4_2')
     print('conv1_d4 ', conv1_d4)
 
     conv1 = tf.concat([conv1_d1, conv1_d2, conv1_d4], 3)
     print('conv1_concat', conv1)
-    conv1 = GLU(conv1, 8, [128, 1], scope='conv1_2')
-    conv1 = GLU(conv1, 8, [128, 1], normalizer_fn=slim.batch_norm, scope='conv1_3')
-    print('conv1: ', conv1)
-    #conv1 = GLU(conv1, 4, [256, 1], scope='conv1_2')
 
-    #with tf.name_scope('embedding'):
+    conv1 = GLU(conv1, 16, [128, 1], normalizer_fn=slim.batch_norm, scope='conv1_2')
+    conv1 = GLU(conv1, 16, [128, 1], normalizer_fn=slim.batch_norm, scope='conv1_3')
+    print('conv1: ', conv1)
+
 
     #convblock 2
-    conv2 = GLU(conv1, 16, [128, 1], scope='conv2_1')
-    conv2 = GLU(conv1, 16, [128, 1],normalizer_fn=slim.batch_norm, scope='conv2_2')
+    conv2 = GLU(conv1, 32, [128, 1], normalizer_fn=slim.batch_norm, scope='conv2_1')
+    conv2 = GLU(conv1, 32, [128, 1], normalizer_fn=slim.batch_norm, scope='conv2_2')
     conv2 = slim.max_pool2d(conv2, [2,1])
     print('conv2: ', conv2)
 
@@ -60,21 +59,22 @@ def conv_net(x, cls, dropout, is_training=False):
     print('embedded:', embedded)
 
     #convblock 3
-    conv3 = GLU(embedded, 16, [128, 1], scope='conv3_1')
-    conv3 = GLU(conv3, 32, [128, 1],normalizer_fn=slim.batch_norm, scope='conv3_2')
+    conv3 = GLU(embedded, 64, [128, 1], normalizer_fn=slim.batch_norm, scope='conv3_1')
+    conv3 = GLU(conv3, 64, [128, 1], normalizer_fn=slim.batch_norm, scope='conv3_2')
     print('conv3: ', conv3)
 
     #convblock 4
     conv4 = tf.depth_to_space(conv3, 4) #upconv
     print('d2sp: ', conv4)
-    conv1shape = conv1.get_shape().as_list()
-    conv4 = tf.reshape(conv4, shape=conv1shape[:3]+[16]) # reshape upconvolution to have proper shape
+    c1s = conv1.get_shape().as_list()
+    conv4 = tf.reshape(conv4, shape=[c1s[0],-1, c1s[2], 32]) # reshape upconvolution to have proper shape
+    print('ddd:', conv4)
     conv4 = tf.concat([conv4, conv1], 3) # <- unet like concat first with last
 
-    conv4 = GLU(conv4, 32, [128, 1], scope='conv4_1')
+    conv4 = GLU(conv4, 64, [128, 1],normalizer_fn=slim.batch_norm, scope='conv4_1')
     conv4 = GLU(conv4, 64, [128, 1], normalizer_fn=slim.batch_norm, scope='conv4_2')
     #convblock 5
-    conv4 = GLU(conv4, 64, [128, 1], scope='conv4_3')
+    conv4 = GLU(conv4, 128, [128, 1], normalizer_fn=slim.batch_norm, scope='conv4_3')
     conv4 = GLU(conv4, 128, [128, 1], normalizer_fn=slim.batch_norm, scope='conv4_4')
     print('conv4: ', conv4)
 
@@ -83,6 +83,6 @@ def conv_net(x, cls, dropout, is_training=False):
     print('conv5: ', conv5)
 
     #out
-    out = tf.reshape(conv5, [-1, conv1shape[1], discrete_class])
+    out = tf.reshape(conv5, [c1s[0], -1, discrete_class])
     print('out: ', out)
     return out
