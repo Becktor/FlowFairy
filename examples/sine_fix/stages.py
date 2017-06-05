@@ -21,7 +21,7 @@ def norm(tensor):
     tmin = tf.reduce_min(tensor)
     return tf.div((tensor - tmin), (tf.reduce_max(tensor) - tmin) + 1e-12)
 
-@register(250)
+@register(100)
 class SummaryStage(Stage):
     def fig2rgb_array(self, expand=True):
         self.figure.canvas.draw()

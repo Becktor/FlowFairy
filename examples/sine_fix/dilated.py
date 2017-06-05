@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from flowfairy.conf import settings
-from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d, GLU, causal_GLU
+from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d, GLU, causal_GLU, dense_block
 from functools import partial
 import ops
 
@@ -18,6 +18,9 @@ def broadcast(l, emb):
     emb = tf.tile(emb, (1,sh,1,1))
     return tf.concat([l, emb], 3)
 
+
+def dense(inl, depth):
+    return dense_block(inl, GLU, {'num_filters':depth, 'kernel_size':[128,1]})
 
 # Create model
 def conv_net(x, cls, dropout, is_training=False):
@@ -38,11 +41,9 @@ def conv_net(x, cls, dropout, is_training=False):
 
     conv1 = tf.concat([conv1_d1, conv1_d2, conv1_d4], 3)
     print('conv1_concat', conv1)
-    conv1 = GLU(conv1, 16, [128, 1], scope='conv1_2')
-    print('conv1: ', conv1)
-    #conv1 = GLU(conv1, 4, [256, 1], scope='conv1_2')
 
-    #with tf.name_scope('embedding'):
+    conv1 = dense(conv1, 16)
+
 
     #convblock 2
     conv2 = GLU(conv1, 32, [128, 1], scope='conv2_1')

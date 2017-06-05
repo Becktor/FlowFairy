@@ -83,7 +83,7 @@ class Speech(Feature):
             audio += np.abs(audio.min())
             amax = audio.max()
 
-            if amax <= 5e-1:
+            if amax <= 5e-2:
                 #print(f'{amax} audio, file: {npz} at idx {lidx}')
                 if i+1 == retries:
                     raise FeatureError('Too silent')

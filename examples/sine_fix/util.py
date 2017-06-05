@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from functools import partial
 import tensorflow.contrib.slim as slim
 from tensorflow.contrib.layers.python.layers import initializers
 
@@ -80,6 +81,7 @@ SHIFT_IN_RAD = np.pi / 2.0 # shift zero to be in front
 SPEECH_INTERVAL_RAD = 15*DEG_TO_RAD
 MICDIST = 0.1
 SPEED_OF_SOUND = 340 # m/s
+deg15 = 15*DEG_TO_RAD
 
 def circle_coord(rad, r=1):
     x = r*tf.cos(rad)
@@ -89,7 +91,11 @@ def circle_coord(rad, r=1):
 def random_noisy_speech(speech, noise, outputlen, micdist, sr=22050):
     # sample single random pos
     bs, seq_len, _ = speech.get_shape().as_list()
-    pos = tf.random_uniform([1, 1], 0, np.float32(np.pi))
+    left = tf.random_uniform([1, 1], np.float32(np.pi)/2 + deg15, np.float32(np.pi))
+    right = tf.random_uniform([1, 1], 0, np.float32(np.pi)/2 - deg15)
+    selector = tf.cast(tf.random_uniform([1], maxval=2, dtype=tf.int32), tf.float32)
+    pos = (1-selector) * left + selector * right
+    # Force pos to be to either side
     cord = circle_coord(pos, 1.0)
 
     # dist to each microphone vector of shape bs
@@ -124,3 +130,32 @@ def random_noisy_speech(speech, noise, outputlen, micdist, sr=22050):
     # shift noise_Rad to lie in -pi/2, pi/2 instead of 0,pi
 
     return x, y, speech_rad, noise_rad
+
+
+blk_idx = 0
+def dense_block(inl, blockcmp, cmpargs, pool=True, pool_kernel=[2,1], size=5, is_training=False):
+    global blk_idx
+    blk_idx += 1
+    with tf.variable_scope('dense_%i' % blk_idx):
+        inl = slim.batch_norm(inl, is_training=is_training)
+        inl = lrelu(inl, leak=0.1)
+
+        with tf.variable_scope('d_%i' % 0):
+            clayer = blockcmp(inl, **cmpargs)
+        layers = [inl, clayer]
+
+        for i in range(size-1):
+            with tf.variable_scope(f'd_{i+1}'):
+                clayer = tf.concat(layers, axis=3)
+                clayer = blockcmp(clayer, **cmpargs)
+                layers += [clayer]
+
+        if pool:
+            pooled = slim.max_pool2d(clayer, pool_kernel)
+            return pooled, clayer
+        return None, clayer
+
+
+def reset():
+    global blk_idx
+    blk_idx = 0
