@@ -63,13 +63,13 @@ def conv_net(x, cls, dropout, is_training=False):
 
     #convblock 4
     d4 = tf.depth_to_space(d3, 2) #upconv
-    d4 = tf.reshape(d4, shape=d2s[:3]+[16]) # reshape upconvolution to have proper shape
+    d4 = tf.reshape(d4, shape=[ d2s[0], -1, d2s[2], 16 ]) # reshape upconvolution to have proper shape
     d4 = tf.concat([d2, d4], 3) # <- unet like concat first with last
     _, d4 = dense(d4, 16, pool=False)
     print('d4', d4)
 
     d5 = tf.depth_to_space(d4, 2)
-    d5 = tf.reshape(d5, shape=d1s[:3]+[8])
+    d5 = tf.reshape(d5, shape=[ d1s[0], -1, d1s[2], 8])
     d5 = tf.concat([d1, d5], 3)
     _, d5 = dense(d5, 8, pool=False)
     print('d5', d5)
@@ -81,7 +81,7 @@ def conv_net(x, cls, dropout, is_training=False):
     print('conv5: ', conv5)
 
     #out
-    out = tf.reshape(conv5, d1s[:2]+[discrete_class])
+    out = tf.reshape(conv5, [d1s[0], -1, discrete_class])
     print('out: ', out)
     return out
 
