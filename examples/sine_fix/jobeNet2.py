@@ -5,7 +5,7 @@ from util import lrelu, conv2d, maxpool2d, embedding, avgpool2d, GLU, causal_GLU
 from functools import partial
 import ops
 
-from deepspeech3 import conv_net
+from deepspeech4 import conv_net
 
 learning_rate = settings.LEARNING_RATE
 discrete_class = settings.DISCRETE_CLASS
