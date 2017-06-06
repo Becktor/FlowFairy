@@ -2,34 +2,31 @@ import os
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
-NET = 'jobeNet'
+NET = 'net'
 
 FEATURES = [
-    #'feature.SineGen',
-    #'feature.NoisySineGen',
+    'feature.SineGen',
+    'feature.NoisySineGen',
+#    'feature.ConvertToClasses',
     #'feature.Dropout',
-    'feature.Speech',
-    'feature.ConvertToClasses'
-    #'feature.Mask'
+    'feature.Chunk'
 ]
 
-SAMPLERATE = 22050
-OUTPUTLEN = 11024
+SAMPLERATE = 2**14
 DURATION = 1
 DROPOUT = 0.50
-LEARNING_RATE = 0.0005 # 5e-4
-CLASS_COUNT = 2483
-FREQUENCY_START = 200
+LEARNING_RATE = 0.001
+CLASS_COUNT = 100
+FREQUENCY_START = 300
 FREQUENCY_LIMIT = (FREQUENCY_START, FREQUENCY_START + CLASS_COUNT*2)
-EMBEDDING_SIZE = 32
 DISCRETE_CLASS = 256
-MAX_AMP = 3
+
 
 
 BATCH_SIZE = 32
-QUEUE_CAPACITY = 4 * BATCH_SIZE
+CHUNK = 25
 
-CUDA_VISIBLE_DEVICES = 3
+CUDA_VISIBLE_DEVICES = 1
 
 LOG_INTERVAL = 100//BATCH_SIZE
 
@@ -37,6 +34,6 @@ LOG_DIR = os.path.join(base_dir, "logs")
 
 DATA = {
     'train': (),
-    # 'validation': (),
+    'validation': (),
     'test': ()
 }
